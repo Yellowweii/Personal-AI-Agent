@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -8,6 +9,7 @@ export interface Message {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  imageUrl?: string; // AI 返回的图片 URL
 }
 
 // ==================== 暴露给外部的回调接口 ====================
@@ -17,6 +19,7 @@ export interface ChatboxCallbacks {
     content: string,
     onChunk: (text: string) => void,
     onDone: () => void,
+    onImageReady?: (imageUrl: string) => void,
   ) => void;
 }
 
@@ -92,6 +95,21 @@ export function Chatbox({ callbacks }: { callbacks?: ChatboxCallbacks }) {
         setIsLoading(false);
       };
 
+      const onImageReady = (imageUrl: string) => {
+        setMessages((prev) => {
+          return [
+            ...prev,
+            {
+              id: assistantId,
+              role: "assistant" as const,
+              content: "已根据你的描述生成图片：",
+              imageUrl,
+              timestamp: new Date(),
+            },
+          ];
+        });
+      };
+
       // ============================================================
       // TODO: 替换为你自己的 API 调用实现
       //
@@ -102,11 +120,10 @@ export function Chatbox({ callbacks }: { callbacks?: ChatboxCallbacks }) {
       // ============================================================
       try {
         if (callbacks?.onSend) {
-          callbacks.onSend(content, onChunk, onDone);
+          callbacks.onSend(content, onChunk, onDone, onImageReady);
         } else {
-          // 默认示例：调用 SiliconFlow GLM-4.7
-          // 注意：正式项目请把 API Key 放到环境变量，不要硬编码！
-          const response = await fetch("/api/chat", {
+          // 调用 detectIntent API（会自动判断意图并调用文生文或文生图）
+          const intentResponse = await fetch("/api/detectIntent", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -116,35 +133,55 @@ export function Chatbox({ callbacks }: { callbacks?: ChatboxCallbacks }) {
             }),
           });
 
-          const reader = response.body?.getReader();
-          const decoder = new TextDecoder();
+          const { intent } = await intentResponse.json();
+          if (intent === "TEXT") {
+            const textResponse = await fetch("/api/text2Text", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ messages: newMessages }),
+            });
+            const reader = textResponse.body?.getReader();
+            const decoder = new TextDecoder();
 
-          if (reader) {
-            let buffer = "";
-            while (true) {
-              const { done, value } = await reader.read();
-              onDone();
-              if (done) break;
+            if (reader) {
+              let buffer = "";
+              while (true) {
+                const { done, value } = await reader.read();
+                onDone();
+                if (done) break;
 
-              buffer += decoder.decode(value, { stream: true });
-              const lines = buffer.split("\n");
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split("\n");
 
-              buffer = lines.pop() || "";
+                buffer = lines.pop() || "";
 
-              for (const line of lines) {
-                if (line.startsWith("data: ")) {
-                  const data = line.slice(6).trim();
-                  if (data === "[DONE]") continue;
-                  try {
-                    const parsed = JSON.parse(data);
-                    const chunk = parsed.choices?.[0]?.delta?.content;
-                    if (chunk) onChunk(chunk);
-                  } catch {
-                    // ignore parse errors
+                for (const line of lines) {
+                  if (line.startsWith("data: ")) {
+                    const data = line.slice(6).trim();
+                    if (data === "[DONE]") continue;
+                    try {
+                      const parsed = JSON.parse(data);
+                      const chunk = parsed.choices?.[0]?.delta?.content;
+                      if (chunk) onChunk(chunk);
+                    } catch {
+                      // ignore parse errors
+                    }
                   }
                 }
               }
             }
+          } else if (intent === "IMAGE") {
+            const imageResponse = await fetch("/api/text2Image", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ messages: newMessages }),
+            });
+            const { imageUrl } = await imageResponse.json();
+            onImageReady(imageUrl);
           }
         }
       } catch (err) {
@@ -158,7 +195,7 @@ export function Chatbox({ callbacks }: { callbacks?: ChatboxCallbacks }) {
             timestamp: new Date(),
           },
         ]);
-        setIsLoading(false);
+      } finally {
         onDone();
       }
     },
@@ -304,15 +341,36 @@ export function Chatbox({ callbacks }: { callbacks?: ChatboxCallbacks }) {
                   message.role === "user" ? "text-right" : ""
                 }`}
               >
-                <div
-                  className={`inline-block px-4 py-3 rounded-2xl text-sm leading-relaxed text-left whitespace-pre-wrap wrap-break-word ${
-                    message.role === "user"
-                      ? "bg-blue-500 text-white rounded-tr-sm"
-                      : "bg-white/5 text-white/90 rounded-tl-sm"
-                  }`}
-                >
-                  {message.content}
-                </div>
+                {message.role === "assistant" ? (
+                  <div
+                    className={`inline-flex max-w-full flex-col gap-3 rounded-2xl px-4 py-3 text-left text-sm leading-relaxed text-white/90 bg-white/5 rounded-tl-sm whitespace-pre-wrap wrap-break-word`}
+                  >
+                    {message.content ? (
+                      <div className="min-w-0">{message.content}</div>
+                    ) : null}
+                    {message.imageUrl ? (
+                      <div className="rounded-xl overflow-hidden max-w-full shrink-0">
+                        <img
+                          src={message.imageUrl}
+                          alt="AI 生成"
+                          className="max-w-[min(100%,300px)] max-h-[300px] w-full object-cover"
+                          onLoad={() => {
+                            bottomRef.current?.scrollIntoView({
+                              behavior: "smooth",
+                            });
+                          }}
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div
+                    className={`inline-block px-4 py-3 rounded-2xl text-sm leading-relaxed text-left whitespace-pre-wrap wrap-break-word bg-blue-500 text-white rounded-tr-sm`}
+                  >
+                    {message.content}
+                  </div>
+                )}
+
                 <div className="mt-1 text-[10px] text-white/30">
                   {message.role === "user" ? "你" : "AI"} ·{" "}
                   {message.timestamp.toLocaleTimeString("zh-CN", {
