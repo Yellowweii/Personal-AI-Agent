@@ -1,5 +1,6 @@
 export const POST = async (req: Request) => {
   const { messages } = await req.json();
+  const signal = req.signal;
   const response = await fetch(
     "https://api.siliconflow.cn/v1/chat/completions",
     {
@@ -13,6 +14,7 @@ export const POST = async (req: Request) => {
         messages: messages,
         stream: true,
       }),
+      signal,
     },
   );
 

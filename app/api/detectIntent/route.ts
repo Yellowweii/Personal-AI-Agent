@@ -1,6 +1,7 @@
 export const POST = async (req: Request) => {
   try {
     const { messages } = await req.json();
+    const signal = req.signal;
 
     // 1. 判断用户意图
     const intentResponse = await fetch(
@@ -25,6 +26,7 @@ export const POST = async (req: Request) => {
             ...messages,
           ],
         }),
+        signal,
       },
     );
 

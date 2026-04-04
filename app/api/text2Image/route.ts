@@ -1,5 +1,6 @@
 export const POST = async (req: Request) => {
   const { messages } = await req.json();
+  const signal = req.signal;
 
   const descriptionResponse = await fetch(
     "https://api.siliconflow.cn/v1/chat/completions",
@@ -20,6 +21,7 @@ export const POST = async (req: Request) => {
           ...messages,
         ],
       }),
+      signal,
     },
   );
 
@@ -42,6 +44,7 @@ export const POST = async (req: Request) => {
         model: process.env.LLM_IMAGE_MODEL,
         prompt: description,
       }),
+      signal,
     },
   );
 
