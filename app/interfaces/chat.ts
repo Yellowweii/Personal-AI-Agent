@@ -4,11 +4,12 @@ export interface Message {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  imagePrefix?: string;
   imageUrl?: string;
 }
 
 // 意图类型
-export type Intent = "TEXT" | "IMAGE";
+export type Intent = "TEXT" | "IMAGE" | "MULTIMODAL";
 
 // useChat hook 返回类型
 export interface UseChatReturn {

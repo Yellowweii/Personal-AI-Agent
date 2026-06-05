@@ -5,11 +5,12 @@ export const textToText = async (
   onChunk: (text: string) => void,
   onDone: () => void,
   signal?: AbortSignal,
+  mode?: "multimodal",
 ): Promise<void> => {
   const response = await fetch("/api/text2Text", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages }),
+    body: JSON.stringify({ messages, mode }),
     signal,
   });
 
@@ -26,8 +27,10 @@ export const textToText = async (
   try {
     while (true) {
       const { done, value } = await reader.read();
-      onDone();
-      if (done) break;
+      if (done) {
+        onDone();
+        break;
+      }
 
       if (signal?.aborted) {
         reader.cancel();

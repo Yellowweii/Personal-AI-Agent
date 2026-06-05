@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import type { Message } from "@/interfaces/chat";
+import type { Message, UseChatReturn } from "@/interfaces/chat";
 import { detectIntent } from "@/lib/detectIntent";
 import { textToText } from "@/lib/textToText";
 import { textToImage } from "@/lib/textToImage";
+import { CHAT_ERROR_MESSAGE, IMAGE_GENERATING_PREFIX } from "@/constants/ui";
 
-export const useChat = () => {
+export const useChat = (): UseChatReturn => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -41,43 +42,30 @@ export const useChat = () => {
       const assistantId = crypto.randomUUID();
       let accumulated = "";
 
-      const onChunk = (text: string) => {
-        accumulated += text;
+      const upsertAssistant = (patch: Partial<Message>) => {
         setMessages((prev) => {
           const exists = prev.find((m) => m.id === assistantId);
           if (exists) {
             return prev.map((m) =>
-              m.id === assistantId ? { ...m, content: accumulated } : m,
+              m.id === assistantId ? { ...m, ...patch } : m,
             );
-          } else {
-            return [
-              ...prev,
-              {
-                id: assistantId,
-                role: "assistant" as const,
-                content: accumulated,
-                timestamp: new Date(),
-              },
-            ];
           }
+          return [
+            ...prev,
+            {
+              id: assistantId,
+              role: "assistant" as const,
+              content: "",
+              timestamp: new Date(),
+              ...patch,
+            },
+          ];
         });
       };
 
-      const onDone = () => {
-        setIsLoading(false);
-      };
-
-      const onImageReady = (imageUrl: string) => {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: assistantId,
-            role: "assistant" as const,
-            content: "已根据你的描述生成图片：",
-            imageUrl,
-            timestamp: new Date(),
-          },
-        ]);
+      const onChunk = (text: string) => {
+        accumulated += text;
+        upsertAssistant({ content: accumulated });
       };
 
       const controller = new AbortController();
@@ -87,10 +75,44 @@ export const useChat = () => {
         const intent = await detectIntent(newMessages, controller.signal);
 
         if (intent === "TEXT") {
-          await textToText(newMessages, onChunk, onDone, controller.signal);
-        } else if (intent === "IMAGE") {
-          const imageUrl = await textToImage(newMessages, controller.signal);
-          onImageReady(imageUrl);
+          await textToText(
+            newMessages,
+            onChunk,
+            () => setIsLoading(false),
+            controller.signal,
+          );
+        } else if (intent === "MULTIMODAL" || intent === "IMAGE") {
+          upsertAssistant({ imagePrefix: IMAGE_GENERATING_PREFIX });
+
+          if (intent === "MULTIMODAL") {
+            const bufferedChunks: string[] = [];
+
+            await Promise.all([
+              textToText(
+                newMessages,
+                (chunk) => bufferedChunks.push(chunk),
+                () => {},
+                controller.signal,
+                "multimodal",
+              ),
+              textToImage(newMessages, controller.signal).then(({ imageUrl }) =>
+                upsertAssistant({ imageUrl }),
+              ),
+            ]);
+
+            accumulated = "";
+            for (const chunk of bufferedChunks) {
+              accumulated += chunk;
+              upsertAssistant({ content: accumulated });
+              await new Promise((resolve) => requestAnimationFrame(resolve));
+            }
+          } else {
+            const { imageUrl } = await textToImage(
+              newMessages,
+              controller.signal,
+            );
+            upsertAssistant({ imageUrl });
+          }
         }
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") {
@@ -102,7 +124,7 @@ export const useChat = () => {
           {
             id: crypto.randomUUID(),
             role: "assistant",
-            content: "抱歉，发生了错误，请稍后重试。",
+            content: CHAT_ERROR_MESSAGE,
             timestamp: new Date(),
           },
         ]);

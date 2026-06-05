@@ -64,8 +64,8 @@ export const MessageBubble = ({ message, bottomRef }: MessageBubbleProps) => {
           </div>
         ) : (
           <div className="inline-flex max-w-full flex-col gap-3 rounded-2xl px-4 py-3 text-left text-sm leading-relaxed text-white/90 bg-white/5 rounded-tl-sm whitespace-pre-wrap wrap-break-word">
-            {message.content && (
-              <div className="min-w-0">{message.content}</div>
+            {message.imagePrefix && (
+              <div className="min-w-0 text-white/60">{message.imagePrefix}</div>
             )}
             {message.imageUrl && (
               <div className="rounded-xl overflow-hidden max-w-full shrink-0">
@@ -78,6 +78,9 @@ export const MessageBubble = ({ message, bottomRef }: MessageBubbleProps) => {
                   }
                 />
               </div>
+            )}
+            {message.content && (
+              <div className="min-w-0">{message.content}</div>
             )}
           </div>
         )}

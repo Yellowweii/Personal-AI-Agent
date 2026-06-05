@@ -1,9 +1,9 @@
-import type { Message } from "@/interfaces/chat";
+import type { Message, TextToImageResponse } from "@/interfaces/chat";
 
 export const textToImage = async (
   messages: Message[],
   signal?: AbortSignal,
-): Promise<string> => {
+): Promise<TextToImageResponse> => {
   const response = await fetch("/api/text2Image", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -15,6 +15,5 @@ export const textToImage = async (
     throw new Error("图片生成失败，请稍后重试");
   }
 
-  const data: { imageUrl: string } = await response.json();
-  return data?.imageUrl ?? "";
-}
+  return response.json();
+};

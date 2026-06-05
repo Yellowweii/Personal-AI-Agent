@@ -15,6 +15,12 @@ export const detectIntent = async (
     throw new Error("意图判断失败，请稍后重试");
   }
 
-  const data: { intent: Intent } = await response.json();
-  return data?.intent ?? "TEXT";
-}
+  const data: { intent: string } = await response.json();
+  const intent = data?.intent?.trim().toUpperCase();
+
+  if (intent === "IMAGE" || intent === "MULTIMODAL") {
+    return intent;
+  }
+
+  return "TEXT";
+};

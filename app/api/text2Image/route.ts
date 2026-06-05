@@ -1,8 +1,11 @@
-export const POST = async (req: Request) => {
-  const { messages } = await req.json();
-  const signal = req.signal;
+import { IMAGE_PROMPT_SYSTEM_PROMPT } from "@/constants/prompts";
 
-  const descriptionResponse = await fetch(
+const chatCompletion = async (
+  system: string,
+  messages: unknown[],
+  signal: AbortSignal,
+) => {
+  const response = await fetch(
     "https://api.siliconflow.cn/v1/chat/completions",
     {
       method: "POST",
@@ -12,46 +15,54 @@ export const POST = async (req: Request) => {
       },
       body: JSON.stringify({
         model: process.env.LLM_TEXT_MODEL,
-        messages: [
-          {
-            role: "system",
-            content:
-              "根据对话历史，提炼出一段完整的图片生成描述，只返回描述内容，不要其他内容。",
-          },
-          ...messages,
-        ],
+        messages: [{ role: "system", content: system }, ...messages],
       }),
       signal,
     },
   );
 
-  if (!descriptionResponse.ok) {
-    throw new Error(`描述生成 API 请求失败: ${descriptionResponse.status}`);
+  if (!response.ok) {
+    throw new Error(`LLM 请求失败: ${response.status}`);
   }
 
-  const description = (await descriptionResponse.json()).choices[0].message
-    .content;
+  return (await response.json()).choices[0].message.content as string;
+};
 
-  const imageResponse = await fetch(
-    "https://api.siliconflow.cn/v1/images/generations",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.LLM_API_KEY}`,
+export const POST = async (req: Request) => {
+  try {
+    const { messages } = await req.json();
+    const signal = req.signal;
+
+    const imagePrompt = await chatCompletion(
+      IMAGE_PROMPT_SYSTEM_PROMPT,
+      messages,
+      signal,
+    );
+
+    const imageResponse = await fetch(
+      "https://api.siliconflow.cn/v1/images/generations",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.LLM_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: process.env.LLM_IMAGE_MODEL,
+          prompt: imagePrompt,
+        }),
+        signal,
       },
-      body: JSON.stringify({
-        model: process.env.LLM_IMAGE_MODEL,
-        prompt: description,
-      }),
-      signal,
-    },
-  );
+    );
 
-  if (!imageResponse.ok) {
-    throw new Error(`文生图 API 请求失败: ${imageResponse.status}`);
+    if (!imageResponse.ok) {
+      throw new Error(`文生图 API 请求失败: ${imageResponse.status}`);
+    }
+
+    const imageUrl = (await imageResponse.json()).data[0].url;
+    return Response.json({ imageUrl });
+  } catch (error) {
+    console.error("text2Image error:", error);
+    return Response.json({ error: "图片生成失败" }, { status: 500 });
   }
-
-  const imageUrl = (await imageResponse.json()).data[0].url;
-  return Response.json({ imageUrl });
 };

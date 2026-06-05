@@ -1,9 +1,10 @@
+import { DETECT_INTENT_SYSTEM_PROMPT } from "@/constants/prompts";
+
 export const POST = async (req: Request) => {
   try {
     const { messages } = await req.json();
     const signal = req.signal;
 
-    // 1. 判断用户意图
     const intentResponse = await fetch(
       "https://api.siliconflow.cn/v1/chat/completions",
       {
@@ -15,14 +16,7 @@ export const POST = async (req: Request) => {
         body: JSON.stringify({
           model: process.env.LLM_TEXT_MODEL,
           messages: [
-            {
-              role: "system",
-              content: `你是一个意图分类器，判断用户是否明确想要生成图片。
-                  规则：
-                  - 只有用户明确说"画"、"生成图片"、"图片"、"绘制"等词，才返回 IMAGE
-                  - 其他所有情况一律返回 TEXT
-                  - 只返回 IMAGE 或 TEXT，不要返回其他内容`,
-            },
+            { role: "system", content: DETECT_INTENT_SYSTEM_PROMPT },
             ...messages,
           ],
         }),

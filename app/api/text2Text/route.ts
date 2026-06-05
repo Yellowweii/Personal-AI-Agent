@@ -1,6 +1,16 @@
+import { MULTIMODAL_SYSTEM_PROMPT } from "@/constants/prompts";
+
 export const POST = async (req: Request) => {
-  const { messages } = await req.json();
+  const { messages, mode } = await req.json();
   const signal = req.signal;
+
+  const systemPrompt =
+    mode === "multimodal" ? MULTIMODAL_SYSTEM_PROMPT : undefined;
+
+  const apiMessages = systemPrompt
+    ? [{ role: "system", content: systemPrompt }, ...messages]
+    : messages;
+
   const response = await fetch(
     "https://api.siliconflow.cn/v1/chat/completions",
     {
@@ -11,7 +21,7 @@ export const POST = async (req: Request) => {
       },
       body: JSON.stringify({
         model: process.env.LLM_TEXT_MODEL,
-        messages: messages,
+        messages: apiMessages,
         stream: true,
       }),
       signal,

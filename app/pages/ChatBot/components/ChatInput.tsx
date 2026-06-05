@@ -1,6 +1,13 @@
 "use client";
 
 import { useEffect, useRef, KeyboardEvent, ChangeEvent } from "react";
+import {
+  MicrophoneIcon,
+  StopRecordingIcon,
+  TranscribingSpinnerIcon,
+} from "@/svgs/audioRecorder";
+import { SendIcon } from "@/svgs/chat";
+import { CHAT_INPUT_PLACEHOLDER } from "@/constants/ui";
 
 interface ChatInputProps {
   value: string;
@@ -8,6 +15,12 @@ interface ChatInputProps {
   onSubmit: () => void;
   onStop: () => void;
   isLoading: boolean;
+  isRecording?: boolean;
+  isTranscribing?: boolean;
+  onStartVoice?: () => Promise<void>;
+  onStopVoice?: () => void;
+  isVoiceSupported?: boolean;
+  voiceError?: string | null;
 }
 
 export const ChatInput = ({
@@ -16,6 +29,12 @@ export const ChatInput = ({
   onSubmit,
   onStop,
   isLoading,
+  isRecording = false,
+  isTranscribing = false,
+  onStartVoice,
+  onStopVoice,
+  isVoiceSupported = false,
+  voiceError,
 }: ChatInputProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -38,6 +57,12 @@ export const ChatInput = ({
     }
   };
 
+  const inputDisabled = isLoading || isRecording || isTranscribing;
+  const iconBtn =
+    "flex items-center justify-center w-8 h-8 rounded-lg transition-colors";
+  const canSubmit =
+    value.trim() && !isLoading && !isRecording && !isTranscribing;
+
   return (
     <form
       onSubmit={(e) => {
@@ -52,52 +77,65 @@ export const ChatInput = ({
           value={value}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          placeholder="输入你的问题..."
-          disabled={isLoading}
+          placeholder={
+            isRecording
+              ? CHAT_INPUT_PLACEHOLDER.recording
+              : isTranscribing
+                ? CHAT_INPUT_PLACEHOLDER.transcribing
+                : CHAT_INPUT_PLACEHOLDER.default
+          }
+          disabled={inputDisabled}
           rows={1}
           className="flex-1 bg-transparent text-sm text-white placeholder-white/30 resize-none outline-none max-h-40 py-1 leading-relaxed disabled:opacity-50"
           style={{ minHeight: "20px" }}
         />
         <div className="flex items-center gap-2 flex-none">
+          {isVoiceSupported && !isLoading &&
+            (isTranscribing ? (
+              <div className={iconBtn} aria-label="正在识别语音">
+                <TranscribingSpinnerIcon />
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={isRecording ? onStopVoice : onStartVoice}
+                className={
+                  isRecording
+                    ? `${iconBtn} bg-red-500/20 text-red-400 hover:bg-red-500/30 animate-pulse`
+                    : `${iconBtn} bg-white/5 text-white/60 hover:bg-white/10 hover:text-white`
+                }
+                title={isRecording ? "停止录音" : "语音输入"}
+                aria-label={isRecording ? "停止录音" : "开始语音输入"}
+              >
+                {isRecording ? <StopRecordingIcon /> : <MicrophoneIcon />}
+              </button>
+            ))}
           {isLoading && (
             <button
               type="button"
               onClick={onStop}
-              className="flex items-center justify-center w-8 h-8 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+              className={`${iconBtn} bg-red-500/20 text-red-400 hover:bg-red-500/30`}
               title="停止生成"
               aria-label="停止生成"
             >
-              <svg
-                className="w-4 h-4"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <rect x="6" y="6" width="12" height="12" rx="1" />
-              </svg>
+              <StopRecordingIcon />
             </button>
           )}
           <button
             type="submit"
-            disabled={!value.trim() || isLoading}
-            className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            disabled={!canSubmit}
+            className={`${iconBtn} bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-30 disabled:cursor-not-allowed`}
             aria-label="发送消息"
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-              />
-            </svg>
+            <SendIcon />
           </button>
         </div>
       </div>
+      {voiceError && (
+        <p className="text-center text-[10px] text-red-400/80 mt-1">
+          {voiceError}
+        </p>
+      )}
       <p className="text-center text-[10px] text-white/20 mt-2 hidden sm:block">
         AI 可能会产生不准确的信息，请谨慎辨别
       </p>

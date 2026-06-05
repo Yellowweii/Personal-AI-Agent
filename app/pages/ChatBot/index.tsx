@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useChat } from "@/hooks/useChat";
+import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { ChatHeader } from "@/pages/ChatBot/components/ChatHeader";
 import { EmptyState } from "@/pages/ChatBot/components/EmptyState";
 import { MessageBubble } from "@/pages/ChatBot/components/MessageBubble";
@@ -19,6 +20,15 @@ export const ChatBot = () => {
     clearMessages,
   } = useChat();
 
+  const {
+    status,
+    error: voiceError,
+    isSupported,
+    startRecording,
+    stopRecording,
+  } = useAudioRecorder();
+
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -26,8 +36,51 @@ export const ChatBot = () => {
   }, [messages]);
 
   const handleSubmit = () => {
+    if (
+      !input.trim() ||
+      isLoading ||
+      status === "recording" ||
+      isTranscribing
+    ) {
+      return;
+    }
     handleSend(input);
   };
+
+  const handleStartVoice = useCallback(async () => {
+    setInput("");
+    await startRecording();
+  }, [setInput, startRecording]);
+
+  const handleStopVoice = useCallback(async () => {
+    setIsTranscribing(true);
+    try {
+      const audioBlob = await stopRecording();
+      if (!audioBlob || audioBlob.size === 0) return;
+
+      const formData = new FormData();
+      formData.append("audio", audioBlob, "recording.webm");
+
+      const response = await fetch("/api/speech2Text", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        console.error("语音转文字失败");
+        return;
+      }
+
+      const result = (await response.json()) as { text?: string };
+      if (result.text) {
+        setInput(result.text);
+      }
+    } catch (err) {
+      console.error("上传音频失败:", err);
+    } finally {
+      setIsTranscribing(false);
+    }
+  }, [stopRecording, setInput]);
 
   return (
     <div className="flex flex-col h-dvh bg-[#0a0a0a] text-white safe-area-inset">
@@ -45,7 +98,10 @@ export const ChatBot = () => {
             />
           ))}
 
-          {isLoading && <LoadingIndicator />}
+          {isLoading &&
+            messages[messages.length - 1]?.role !== "assistant" && (
+              <LoadingIndicator />
+            )}
 
           <div ref={bottomRef} />
         </div>
@@ -59,6 +115,12 @@ export const ChatBot = () => {
             onSubmit={handleSubmit}
             onStop={handleStop}
             isLoading={isLoading}
+            isRecording={status === "recording"}
+            isTranscribing={isTranscribing}
+            onStartVoice={handleStartVoice}
+            onStopVoice={handleStopVoice}
+            isVoiceSupported={isSupported}
+            voiceError={voiceError}
           />
         </div>
       </footer>
