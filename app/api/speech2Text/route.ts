@@ -15,11 +15,11 @@ export const POST = async (req: Request) => {
     );
 
     const response = await fetch(
-      "https://api.siliconflow.cn/v1/audio/transcriptions",
+      `${process.env.STT_API_BASE_URL}/v1/audio/transcriptions`,
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.LLM_API_KEY}`,
+          Authorization: `Bearer ${process.env.STT_API_KEY}`,
         },
         body: apiFormData,
       },

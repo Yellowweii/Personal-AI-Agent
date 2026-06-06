@@ -12,7 +12,7 @@ export const POST = async (req: Request) => {
     : messages;
 
   const response = await fetch(
-    "https://api.siliconflow.cn/v1/chat/completions",
+    `${process.env.LLM_API_BASE_URL}/v1/chat/completions`,
     {
       method: "POST",
       headers: {

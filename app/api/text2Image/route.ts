@@ -6,7 +6,7 @@ const chatCompletion = async (
   signal: AbortSignal,
 ) => {
   const response = await fetch(
-    "https://api.siliconflow.cn/v1/chat/completions",
+    `${process.env.LLM_API_BASE_URL}/v1/chat/completions`,
     {
       method: "POST",
       headers: {
@@ -40,7 +40,7 @@ export const POST = async (req: Request) => {
     );
 
     const imageResponse = await fetch(
-      "https://api.siliconflow.cn/v1/images/generations",
+      `${process.env.LLM_API_BASE_URL}/v1/images/generations`,
       {
         method: "POST",
         headers: {

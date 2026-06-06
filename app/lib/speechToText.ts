@@ -1,4 +1,4 @@
-import type { SpeechToTextResponse } from "@/interfaces/audioRecorder";
+import type { SpeechToTextResponse } from "@/interfaces/speechToText";
 
 export const speechToText = async (
   audio: Blob,

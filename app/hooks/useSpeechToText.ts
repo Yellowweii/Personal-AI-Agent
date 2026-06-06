@@ -1,9 +1,9 @@
 "use client";
 
 import type {
-  AudioRecorderStatus,
-  UseAudioRecorderReturn,
-} from "@/interfaces/audioRecorder";
+  SpeechToTextStatus,
+  UseSpeechToTextReturn,
+} from "@/interfaces/speechToText";
 import { useState, useCallback, useRef, useSyncExternalStore } from "react";
 
 const checkMediaRecorderSupport = (): boolean => {
@@ -25,8 +25,8 @@ const getSupportedMimeType = (): string | undefined => {
   return types.find((type) => MediaRecorder.isTypeSupported(type));
 };
 
-export const useAudioRecorder = (): UseAudioRecorderReturn => {
-  const [status, setStatus] = useState<AudioRecorderStatus>("idle");
+export const useSpeechToText = (): UseSpeechToTextReturn => {
+  const [status, setStatus] = useState<SpeechToTextStatus>("idle");
   const [error, setError] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -51,7 +51,7 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
     audioChunksRef.current = [];
   }, []);
 
-  const startRecording = useCallback(async () => {
+  const startListening = useCallback(async () => {
     if (!isSupported) {
       setError("当前浏览器不支持录音功能");
       return;
@@ -91,7 +91,7 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
         });
         audioBlobRef.current = audioBlob;
         setStatus("idle");
-        stopResolveRef.current ?.(audioBlob);
+        stopResolveRef.current?.(audioBlob);
         stopResolveRef.current = null;
       };
 
@@ -124,7 +124,7 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
     }
   }, [isSupported, cleanup]);
 
-  const stopRecording = useCallback((): Promise<Blob | null> => {
+  const stopListening = useCallback((): Promise<Blob | null> => {
     if (
       !mediaRecorderRef.current ||
       mediaRecorderRef.current.state === "inactive"
@@ -144,7 +144,7 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
     });
   }, []);
 
-  const getAudioBlob = useCallback((): Blob | null => {
+  const getCapturedAudio = useCallback((): Blob | null => {
     return audioBlobRef.current;
   }, []);
 
@@ -152,8 +152,8 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
     status,
     error,
     isSupported,
-    startRecording,
-    stopRecording,
-    getAudioBlob,
+    startListening,
+    stopListening,
+    getCapturedAudio,
   };
 };

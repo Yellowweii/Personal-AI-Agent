@@ -42,12 +42,17 @@ export const textToText = async (
       buffer = lines.pop() || "";
 
       for (const line of lines) {
-        if (line.startsWith("data: ")) {
-          const data = line.slice(6).trim();
-          if (data === "[DONE]") continue;
+        if (!line.startsWith("data: ")) continue;
+
+        const data = line.slice(6).trim();
+        if (!data || data === "[DONE]") continue;
+
+        try {
           const parsed = JSON.parse(data);
           const chunk = parsed.choices?.[0]?.delta?.content;
           if (chunk) onChunk(chunk);
+        } catch {
+          // 忽略无法解析的 SSE 行，避免中断后续 onDone
         }
       }
     }

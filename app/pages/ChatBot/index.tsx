@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useChat } from "@/hooks/useChat";
-import { useAudioRecorder } from "@/hooks/useAudioRecorder";
+import { useSpeechToText } from "@/hooks/useSpeechToText";
 import { speechToText } from "@/lib/speechToText";
 import { ChatHeader } from "@/pages/ChatBot/components/ChatHeader";
 import { EmptyState } from "@/pages/ChatBot/components/EmptyState";
@@ -25,9 +25,9 @@ export const ChatBot = () => {
     status,
     error: voiceError,
     isSupported,
-    startRecording,
-    stopRecording,
-  } = useAudioRecorder();
+    startListening,
+    stopListening,
+  } = useSpeechToText();
 
   const [isTranscribing, setIsTranscribing] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -50,13 +50,13 @@ export const ChatBot = () => {
 
   const handleStartVoice = useCallback(async () => {
     setInput("");
-    await startRecording();
-  }, [setInput, startRecording]);
+    await startListening();
+  }, [setInput, startListening]);
 
   const handleStopVoice = useCallback(async () => {
     setIsTranscribing(true);
     try {
-      const audioBlob = await stopRecording();
+      const audioBlob = await stopListening();
       if (!audioBlob || audioBlob.size === 0) return;
 
       const { text } = await speechToText(audioBlob);
@@ -68,7 +68,7 @@ export const ChatBot = () => {
     } finally {
       setIsTranscribing(false);
     }
-  }, [stopRecording, setInput]);
+  }, [stopListening, setInput]);
 
   return (
     <div className="flex flex-col h-dvh bg-[#0a0a0a] text-white safe-area-inset">
