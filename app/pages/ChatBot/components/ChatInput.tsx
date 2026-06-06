@@ -125,7 +125,7 @@ export const ChatInput = ({
             type="submit"
             disabled={!canSubmit}
             className={`${iconBtn} bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-30 disabled:cursor-not-allowed`}
-            aria-label="发送消息"
+            aria-label="提交任务"
           >
             <SendIcon />
           </button>
@@ -137,7 +137,7 @@ export const ChatInput = ({
         </p>
       )}
       <p className="text-center text-[10px] text-white/20 mt-2 hidden sm:block">
-        AI 可能会产生不准确的信息，请谨慎辨别
+        Agent 输出仅供参考，重要决策请自行核实
       </p>
     </form>
   );

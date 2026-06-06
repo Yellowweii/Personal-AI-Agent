@@ -17,10 +17,10 @@ export const EmptyState = () => {
         </svg>
       </div>
       <h2 className="text-xl font-semibold text-white mb-2">
-        开始一段新的对话
+        告诉我你想完成什么
       </h2>
       <p className="text-sm text-white/40 max-w-sm">
-        在下方输入你的问题，AI 将实时为你解答，支持多轮对话
+        描述你的目标或任务，Agent 会理解意图并调用文字、图片、语音等能力帮你完成
       </p>
     </div>
   );

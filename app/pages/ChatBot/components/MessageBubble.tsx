@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import type { Message } from "@/interfaces/chat";
+import { MessageTimestamp } from "@/pages/ChatBot/components/MessageTimestamp";
 
 interface MessageBubbleProps {
   message: Message;
@@ -86,11 +87,8 @@ export const MessageBubble = ({ message, bottomRef }: MessageBubbleProps) => {
         )}
 
         <div className="mt-1 text-[10px] text-white/30">
-          {isUser ? "你" : "AI"} ·{" "}
-          {message.timestamp.toLocaleTimeString("zh-CN", {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
+          {isUser ? "你" : "Agent"}
+          <MessageTimestamp timestamp={message.timestamp} />
         </div>
       </div>
     </div>
