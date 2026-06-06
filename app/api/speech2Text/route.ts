@@ -1,5 +1,3 @@
-import { DEFAULT_SPEECH_MODEL } from "@/constants/models";
-
 export const POST = async (req: Request) => {
   try {
     const formData = await req.formData();
@@ -13,7 +11,7 @@ export const POST = async (req: Request) => {
     apiFormData.append("file", audio, "recording.webm");
     apiFormData.append(
       "model",
-      process.env.LLM_SPEECH_MODEL ?? DEFAULT_SPEECH_MODEL,
+      process.env.LLM_STT_MODEL ?? process.env.DEFAULT_STT_MODEL ?? "",
     );
 
     const response = await fetch(
@@ -28,8 +26,15 @@ export const POST = async (req: Request) => {
     );
 
     if (!response.ok) {
-      console.error("SiliconFlow STT 失败:", response.status, await response.text());
-      return Response.json({ error: "语音转文字失败" }, { status: response.status });
+      console.error(
+        "SiliconFlow STT 失败:",
+        response.status,
+        await response.text(),
+      );
+      return Response.json(
+        { error: "语音转文字失败" },
+        { status: response.status },
+      );
     }
 
     const result = (await response.json()) as { text: string };

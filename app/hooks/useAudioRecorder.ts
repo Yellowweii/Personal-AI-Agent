@@ -91,7 +91,7 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
         });
         audioBlobRef.current = audioBlob;
         setStatus("idle");
-        stopResolveRef.current?.(audioBlob);
+        stopResolveRef.current ?.(audioBlob);
         stopResolveRef.current = null;
       };
 

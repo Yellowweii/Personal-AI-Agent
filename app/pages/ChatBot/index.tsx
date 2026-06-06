@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useChat } from "@/hooks/useChat";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
+import { speechToText } from "@/lib/speechToText";
 import { ChatHeader } from "@/pages/ChatBot/components/ChatHeader";
 import { EmptyState } from "@/pages/ChatBot/components/EmptyState";
 import { MessageBubble } from "@/pages/ChatBot/components/MessageBubble";
@@ -58,22 +59,9 @@ export const ChatBot = () => {
       const audioBlob = await stopRecording();
       if (!audioBlob || audioBlob.size === 0) return;
 
-      const formData = new FormData();
-      formData.append("audio", audioBlob, "recording.webm");
-
-      const response = await fetch("/api/speech2Text", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        console.error("语音转文字失败");
-        return;
-      }
-
-      const result = (await response.json()) as { text?: string };
-      if (result.text) {
-        setInput(result.text);
+      const { text } = await speechToText(audioBlob);
+      if (text) {
+        setInput(text);
       }
     } catch (err) {
       console.error("上传音频失败:", err);
