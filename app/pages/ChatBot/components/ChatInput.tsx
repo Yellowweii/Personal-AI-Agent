@@ -5,7 +5,7 @@ import {
   MicrophoneIcon,
   StopRecordingIcon,
   TranscribingSpinnerIcon,
-} from "@/svgs/audioRecorder";
+} from "@/svgs/speechToText";
 import { SendIcon } from "@/svgs/chat";
 import { CHAT_INPUT_PLACEHOLDER } from "@/constants/ui";
 

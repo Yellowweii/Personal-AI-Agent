@@ -1,4 +1,4 @@
-import { IMAGE_PROMPT_SYSTEM_PROMPT } from "@/constants/prompts";
+import { IMAGE_PROMPT_SYSTEM_PROMPT } from "@/constants/systemPrompts";
 
 const chatCompletion = async (
   system: string,

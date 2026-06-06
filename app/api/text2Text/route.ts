@@ -1,4 +1,4 @@
-import { MULTIMODAL_SYSTEM_PROMPT } from "@/constants/prompts";
+import { MULTIMODAL_SYSTEM_PROMPT } from "@/constants/systemPrompts";
 
 export const POST = async (req: Request) => {
   const { messages, mode } = await req.json();

@@ -1,4 +1,4 @@
-import { DETECT_INTENT_SYSTEM_PROMPT } from "@/constants/prompts";
+import { DETECT_INTENT_SYSTEM_PROMPT } from "@/constants/systemPrompts";
 
 export const POST = async (req: Request) => {
   try {
