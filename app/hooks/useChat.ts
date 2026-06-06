@@ -37,6 +37,7 @@ export const useChat = (): UseChatReturn => {
       if (!content.trim() || isLoading) return;
 
       unlockTTS();
+      stopTTS();
 
       const userMsg: Message = {
         id: crypto.randomUUID(),
@@ -166,6 +167,7 @@ export const useChat = (): UseChatReturn => {
     setInput,
     handleSend,
     handleStop,
+    stopSpeech: stopTTS,
     clearMessages,
   };
 };

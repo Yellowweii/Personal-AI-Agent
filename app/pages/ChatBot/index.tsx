@@ -18,6 +18,7 @@ export const ChatBot = () => {
     setInput,
     handleSend,
     handleStop,
+    stopSpeech,
     clearMessages,
   } = useChat();
 
@@ -49,9 +50,10 @@ export const ChatBot = () => {
   };
 
   const handleStartVoice = useCallback(async () => {
+    stopSpeech();
     setInput("");
     await startListening();
-  }, [setInput, startListening]);
+  }, [setInput, startListening, stopSpeech]);
 
   const handleStopVoice = useCallback(async () => {
     setIsTranscribing(true);

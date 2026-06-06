@@ -19,6 +19,7 @@ export interface UseChatReturn {
   setInput: (value: string) => void;
   handleSend: (content: string) => Promise<void>;
   handleStop: () => void;
+  stopSpeech: () => void;
   clearMessages: () => void;
 }
 

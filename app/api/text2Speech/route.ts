@@ -54,32 +54,40 @@ export const POST = async (request: Request) => {
   const voice = process.env.AZURE_TTS_VOICE ?? DEFAULT_AZURE_TTS_VOICE;
   const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='zh-CN'><voice name='${voice}'>${escapeXml(text)}</voice></speak>`;
 
-  const response = await fetch(
-    `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`,
-    {
-      method: "POST",
-      headers: {
-        "Ocp-Apim-Subscription-Key": key,
-        "Content-Type": "application/ssml+xml",
-        "X-Microsoft-OutputFormat": AZURE_TTS_OUTPUT_FORMAT,
+  try {
+    const response = await fetch(
+      `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`,
+      {
+        method: "POST",
+        headers: {
+          "Ocp-Apim-Subscription-Key": key,
+          "Content-Type": "application/ssml+xml",
+          "X-Microsoft-OutputFormat": AZURE_TTS_OUTPUT_FORMAT,
+        },
+        body: ssml,
       },
-      body: ssml,
-    },
-  );
+    );
 
-  if (!response.ok || !response.body) {
-    const detail = await response.text().catch(() => "");
-    console.error("Azure TTS error:", response.status, detail);
+    if (!response.ok || !response.body) {
+      const detail = await response.text().catch(() => "");
+      console.error("Azure TTS error:", response.status, detail);
+      return Response.json(
+        { error: TTS_FETCH_ERROR_MESSAGE } satisfies TextToSpeechErrorResponse,
+        { status: 502 },
+      );
+    }
+
+    return new Response(response.body, {
+      headers: {
+        "Content-Type": "application/octet-stream",
+        "Cache-Control": "no-store",
+      },
+    });
+  } catch (error) {
+    console.error("Azure TTS request failed:", error);
     return Response.json(
       { error: TTS_FETCH_ERROR_MESSAGE } satisfies TextToSpeechErrorResponse,
       { status: 502 },
     );
   }
-
-  return new Response(response.body, {
-    headers: {
-      "Content-Type": "application/octet-stream",
-      "Cache-Control": "no-store",
-    },
-  });
 };

@@ -2,9 +2,11 @@
 
 import { useCallback, useRef } from "react";
 import {
+  TTS_MAX_ATTEMPTS,
   TTS_PLAYBACK_START_DELAY_S,
   TTS_PLAY_CHUNK_BYTES,
   TTS_PREFETCH_BYTES,
+  TTS_RETRY_DELAY_MS,
   TTS_SAMPLE_RATE,
   TTS_SILENT_AUDIO_DATA_URL,
   TTS_UNLOCK_PROBE_VOLUME,
@@ -14,6 +16,9 @@ import {
   extractTextSlices,
   fetchTextToSpeechStream,
 } from "@/lib/textToSpeech";
+
+const sleep = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /** 把多个 Uint8Array 拼成一块 */
 const concatBytes = (chunks: Uint8Array[]) => {
@@ -213,6 +218,13 @@ export const useTextToSpeech = (): UseTextToSpeechReturn => {
 
         streamEnded = true;
         flushPlayback();
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          throw error;
+        }
+        throw error instanceof Error
+          ? error
+          : new Error("TTS 音频流读取失败");
       } finally {
         reader.releaseLock();
       }
@@ -220,7 +232,39 @@ export const useTextToSpeech = (): UseTextToSpeechReturn => {
     [ensureAudioContext, schedulePCM],
   );
 
-  /** 按顺序处理 jobQueue：取任务 → 等音频流 → 排程播放 */
+  /** 拉取音频并播放单句，失败时按 TTS_MAX_ATTEMPTS 重试 */
+  const playSliceWithRetry = useCallback(
+    async (text: string, signal: AbortSignal) => {
+      let lastError: unknown;
+
+      for (let attempt = 1; attempt <= TTS_MAX_ATTEMPTS; attempt++) {
+        try {
+          if (attempt > 1) {
+            await sleep(TTS_RETRY_DELAY_MS);
+            console.warn(`TTS 重试 (${attempt}/${TTS_MAX_ATTEMPTS})`);
+          }
+
+          const stream = await fetchTextToSpeechStream(text, signal);
+          if (signal.aborted) return;
+
+          await schedulePCMStream(stream, signal);
+          return;
+        } catch (error) {
+          if (error instanceof Error && error.name === "AbortError") {
+            throw error;
+          }
+          if (signal.aborted) return;
+
+          lastError = error;
+        }
+      }
+
+      console.error("TTS 播放失败，已跳过该句:", lastError);
+    },
+    [schedulePCMStream],
+  );
+
+  /** 按顺序处理 jobQueue：取任务 → 请求音频 → 排程播放（含重试） */
   const pumpJobs = useCallback(async () => {
     if (pumpingRef.current) return;
     pumpingRef.current = true;
@@ -235,12 +279,9 @@ export const useTextToSpeech = (): UseTextToSpeechReturn => {
       while (jobQueueRef.current.length > 0 && !signal.aborted) {
         const job = jobQueueRef.current.shift()!;
         try {
-          const stream = await job.streamPromise;
-          if (signal.aborted) break;
-          await schedulePCMStream(stream, signal);
+          await playSliceWithRetry(job.text, signal);
         } catch (error) {
           if (error instanceof Error && error.name === "AbortError") break;
-          console.error("TTS 播放失败:", error);
         }
       }
     } finally {
@@ -249,7 +290,7 @@ export const useTextToSpeech = (): UseTextToSpeechReturn => {
         void pumpJobs();
       }
     }
-  }, [schedulePCMStream]);
+  }, [playSliceWithRetry]);
 
   /** 把切分好的句子加入队列，并立即发起 TTS 请求（预取） */
   const enqueueSlices = useCallback(
@@ -258,9 +299,7 @@ export const useTextToSpeech = (): UseTextToSpeechReturn => {
       if (!signal || slices.length === 0) return;
 
       for (const slice of slices) {
-        jobQueueRef.current.push({
-          streamPromise: fetchTextToSpeechStream(slice, signal),
-        });
+        jobQueueRef.current.push({ text: slice });
       }
 
       void pumpJobs();

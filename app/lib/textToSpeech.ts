@@ -35,16 +35,25 @@ export const fetchTextToSpeechStream = async (
   text: string,
   signal?: AbortSignal,
 ): Promise<ReadableStream<Uint8Array>> => {
-  const response = await fetch("/api/text2Speech", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text }),
-    signal,
-  });
+  try {
+    const response = await fetch("/api/text2Speech", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+      signal,
+    });
 
-  if (!response.ok || !response.body) {
-    throw new Error(TTS_FETCH_ERROR_MESSAGE);
+    if (!response.ok || !response.body) {
+      throw new Error(TTS_FETCH_ERROR_MESSAGE);
+    }
+
+    return response.body;
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw error;
+    }
+    throw error instanceof Error
+      ? error
+      : new Error(TTS_FETCH_ERROR_MESSAGE);
   }
-
-  return response.body;
 };

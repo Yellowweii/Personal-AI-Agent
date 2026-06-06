@@ -16,7 +16,7 @@ export interface TextSliceResult {
 
 // 单句 TTS 任务
 export interface TtsJob {
-  streamPromise: Promise<ReadableStream<Uint8Array>>;
+  text: string;
 }
 
 // useTextToSpeech hook 返回类型

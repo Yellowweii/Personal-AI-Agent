@@ -28,5 +28,11 @@ export const TTS_UNLOCK_PROBE_VOLUME = 0.01;
 export const DEFAULT_AZURE_TTS_VOICE = "zh-CN-XiaoxiaoNeural";
 export const AZURE_TTS_OUTPUT_FORMAT = "raw-24khz-16bit-mono-pcm";
 
+// 单句 TTS 失败后的重试次数（含首次请求，例如 3 = 最多试 3 次）
+export const TTS_MAX_ATTEMPTS = 3;
+
+// 重试间隔（毫秒）
+export const TTS_RETRY_DELAY_MS = 800;
+
 // 错误提示
 export const TTS_FETCH_ERROR_MESSAGE = "语音合成失败，请稍后重试";
