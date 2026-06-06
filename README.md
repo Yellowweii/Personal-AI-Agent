@@ -17,8 +17,6 @@
 
 用户提交任务后，Agent 通过 `detectIntent` 判断执行路径，再分别调用 `textToText`、`textToImage` 等能力：
 
-![意图识别与多模态路由流程](./app/public/detectIntent.png)
-
 | 意图 | 行为 |
 |------|------|
 | `TEXT` | 流式文字回复 |
@@ -27,9 +25,7 @@
 
 ### 流式 TTS 播报
 
-文字回复过程中，系统将输出按句切分，调用 Azure Speech 合成音频，并通过 Web Audio API 排队播放：
-
-![textToSpeech 流程](./app/public/textToSpeech.png)
+文字回复过程中，系统将输出按句切分，调用 Azure Speech 合成音频，并通过 Web Audio API 排队播放。
 
 ## 技术栈
 
@@ -53,7 +49,7 @@ app/
 ├── lib/                  # 前端 API 封装
 ├── pages/ChatBot/        # Agent 主界面
 ├── constants/            # 系统提示词、UI 文案
-└── public/               # 静态资源（架构图等）
+└── public/               # 静态资源
 ```
 
 ## 快速开始
