@@ -1,13 +1,13 @@
-import type { Message, TextToImageResponse } from "@/interfaces/chat";
+import type { TextToImageResponse } from "@/interfaces/text2Image";
 
-export const textToImage = async (
-  messages: Message[],
+export const textToImageWithPrompt = async (
+  prompt: string,
   signal?: AbortSignal,
 ): Promise<TextToImageResponse> => {
   const response = await fetch("/api/text2Image", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages }),
+    body: JSON.stringify({ prompt }),
     signal,
   });
 

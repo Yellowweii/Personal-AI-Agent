@@ -1,7 +1,4 @@
-import {
-  VIDEO_DURATION_SYSTEM_PROMPT,
-  VIDEO_PROMPT_SYSTEM_PROMPT,
-} from "@/constants/systemPrompts";
+import { VIDEO_DURATION_SYSTEM_PROMPT } from "@/constants/systemPrompts";
 import {
   DEFAULT_FRAME_RATE,
   DEFAULT_VIDEO_HEIGHT,
@@ -145,16 +142,22 @@ const pollVideoTask = async (
 
 export const POST = async (req: Request) => {
   try {
-    const { messages } = await req.json();
+    const { prompt } = (await req.json()) as { prompt?: string };
     const signal = req.signal;
+
+    const videoPrompt = prompt?.trim();
+    if (!videoPrompt) {
+      return Response.json({ error: "缺少视频生成 prompt" }, { status: 400 });
+    }
 
     const frameRate =
       Number(process.env.LLM_VIDEO_FRAME_RATE) || DEFAULT_FRAME_RATE;
 
-    const [videoPrompt, durationRaw] = await Promise.all([
-      chatCompletion(VIDEO_PROMPT_SYSTEM_PROMPT, messages, signal),
-      chatCompletion(VIDEO_DURATION_SYSTEM_PROMPT, messages, signal),
-    ]);
+    const durationRaw = await chatCompletion(
+      VIDEO_DURATION_SYSTEM_PROMPT,
+      [{ role: "user" as const, content: videoPrompt }],
+      signal,
+    );
 
     const numFrames = calcTotalFrames({ durationRaw, frameRate });
     const videoId = await createVideoTask(

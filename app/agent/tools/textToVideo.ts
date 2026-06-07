@@ -1,14 +1,13 @@
-import type { Message } from "@/interfaces/chat";
 import type { TextToVideoResponse } from "@/interfaces/text2Video";
 
-export const textToVideo = async (
-  messages: Message[],
+export const textToVideoWithPrompt = async (
+  prompt: string,
   signal?: AbortSignal,
 ): Promise<TextToVideoResponse> => {
   const response = await fetch("/api/text2Video", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages }),
+    body: JSON.stringify({ prompt }),
     signal,
   });
 

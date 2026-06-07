@@ -19,10 +19,6 @@ export interface TextToVideoResponse {
   videoUrl: string;
 }
 
-export interface TextToVideoErrorResponse {
-  error: string;
-}
-
 export interface CalcTotalFramesOptions {
   durationRaw: string;
   frameRate?: number;

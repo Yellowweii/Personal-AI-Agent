@@ -1,23 +1,9 @@
-import type { Message } from "@/interfaces/chat";
-
-export const textToText = async (
-  messages: Message[],
+export const consumeSseStream = async (
+  response: Response,
   onChunk: (text: string) => void,
   onDone: () => void,
   signal?: AbortSignal,
-  mode?: "multimodal",
-): Promise<void> => {
-  const response = await fetch("/api/text2Text", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages, mode }),
-    signal,
-  });
-
-  if (!response.ok) {
-    throw new Error("AI 响应失败，请稍后重试");
-  }
-
+) => {
   const reader = response.body?.getReader();
   if (!reader) throw new Error("无法读取响应流");
 
@@ -52,15 +38,10 @@ export const textToText = async (
           const chunk = parsed.choices?.[0]?.delta?.content;
           if (chunk) onChunk(chunk);
         } catch {
-          // 忽略无法解析的 SSE 行，避免中断后续 onDone
+          // 忽略无法解析的 SSE 行
         }
       }
     }
-  } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
-      throw error;
-    }
-    console.error("textToText error:", error);
   } finally {
     reader.releaseLock();
   }

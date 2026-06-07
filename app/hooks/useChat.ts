@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import type { Message, UseChatReturn } from "@/interfaces/chat";
-import { detectIntent } from "@/lib/detectIntent";
-import { textToText } from "@/lib/textToText";
-import { textToImage } from "@/lib/textToImage";
-import { textToVideo } from "@/lib/textToVideo";
-import { CHAT_ERROR_MESSAGE, IMAGE_GENERATING_PREFIX } from "@/constants/ui";
-import { VIDEO_GENERATING_PREFIX } from "@/constants/text2Video";
+import type { Message } from "@/agent/types/message";
+import type { ResponseSlot } from "@/agent/types/responseSlots";
+import type { UseChatReturn } from "@/interfaces/chat";
+import { runAgentPipeline } from "@/agent/planner/planner";
+import { CHAT_ERROR_MESSAGE } from "@/constants/ui";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { buildUserMessageContent } from "@/lib/messageContent";
 
 export const useChat = (): UseChatReturn => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -35,8 +34,8 @@ export const useChat = (): UseChatReturn => {
   }, [stopTTS]);
 
   const handleSend = useCallback(
-    async (content: string) => {
-      if (!content.trim() || isLoading) return;
+    async (content: string, userImageUrl?: string) => {
+      if ((!content.trim() && !userImageUrl) || isLoading) return;
 
       unlockTTS();
       stopTTS();
@@ -44,119 +43,42 @@ export const useChat = (): UseChatReturn => {
       const userMsg: Message = {
         id: crypto.randomUUID(),
         role: "user",
-        content,
+        content: buildUserMessageContent(content, userImageUrl),
         timestamp: new Date(),
       };
 
-      const newMessages: Message[] = [...messages, userMsg];
+      const assistantId = crypto.randomUUID();
+      let assistantMsg: Message = {
+        id: assistantId,
+        role: "assistant",
+        content: "",
+        slots: [],
+        timestamp: new Date(),
+      };
 
-      setMessages(newMessages);
+      const contextMessages: Message[] = [...messages, userMsg];
+
+      setMessages(contextMessages);
       setInput("");
       setIsLoading(true);
-
-      const assistantId = crypto.randomUUID();
-      let accumulated = "";
-
-      const upsertAssistant = (patch: Partial<Message>) => {
-        setMessages((prev) => {
-          const exists = prev.find((m) => m.id === assistantId);
-          if (exists) {
-            return prev.map((m) =>
-              m.id === assistantId ? { ...m, ...patch } : m,
-            );
-          }
-          return [
-            ...prev,
-            {
-              id: assistantId,
-              role: "assistant" as const,
-              content: "",
-              timestamp: new Date(),
-              ...patch,
-            },
-          ];
-        });
-      };
-
-      const onChunk = (text: string) => {
-        accumulated += text;
-        upsertAssistant({ content: accumulated });
-        feedText(text);
-      };
 
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
+      const applySlots = (slots: ResponseSlot[]) => {
+        assistantMsg = { ...assistantMsg, slots };
+        setMessages([...contextMessages, assistantMsg]);
+      };
+
       try {
-        const outputs = await detectIntent(newMessages, controller.signal);
-        const hasMedia = outputs.image || outputs.video;
-
-        if (outputs.image) {
-          upsertAssistant({ imagePrefix: IMAGE_GENERATING_PREFIX });
-        }
-        if (outputs.video) {
-          upsertAssistant({ videoPrefix: VIDEO_GENERATING_PREFIX });
-        }
-
-        if (outputs.text && !hasMedia) {
-          await resetTTS();
-
-          await textToText(
-            newMessages,
-            onChunk,
-            () => setIsLoading(false),
-            controller.signal,
-          );
-
-          flush();
-        } else {
-          const bufferedChunks: string[] = [];
-          const tasks: Promise<void>[] = [];
-
-          if (outputs.text) {
-            tasks.push(
-              textToText(
-                newMessages,
-                (chunk) => bufferedChunks.push(chunk),
-                () => {},
-                controller.signal,
-                "multimodal",
-              ),
-            );
-          }
-
-          if (outputs.image) {
-            tasks.push(
-              textToImage(newMessages, controller.signal).then(({ imageUrl }) =>
-                upsertAssistant({ imageUrl }),
-              ),
-            );
-          }
-
-          if (outputs.video) {
-            tasks.push(
-              textToVideo(newMessages, controller.signal).then(({ videoUrl }) =>
-                upsertAssistant({ videoUrl }),
-              ),
-            );
-          }
-
-          await Promise.all(tasks);
-
-          if (outputs.text) {
-            await resetTTS();
-
-            accumulated = "";
-            for (const chunk of bufferedChunks) {
-              accumulated += chunk;
-              upsertAssistant({ content: accumulated });
-              feedText(chunk);
-              await new Promise((resolve) => requestAnimationFrame(resolve));
-            }
-
-            flush();
-          }
-        }
+        await runAgentPipeline({
+          messages: contextMessages,
+          signal: controller.signal,
+          onSlotsChange: applySlots,
+          onTextChunk: feedText,
+          resetTTS,
+          flushTTS: flush,
+        });
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") {
           stopTTS();

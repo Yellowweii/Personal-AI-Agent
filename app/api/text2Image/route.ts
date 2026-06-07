@@ -1,43 +1,12 @@
-import { IMAGE_PROMPT_SYSTEM_PROMPT } from "@/constants/systemPrompts";
-
-const chatCompletion = async (
-  system: string,
-  messages: unknown[],
-  signal: AbortSignal,
-) => {
-  const response = await fetch(
-    `${process.env.LLM_API_BASE_URL}/v1/chat/completions`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.LLM_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: process.env.LLM_TEXT_MODEL,
-        messages: [{ role: "system", content: system }, ...messages],
-      }),
-      signal,
-    },
-  );
-
-  if (!response.ok) {
-    throw new Error(`LLM 请求失败: ${response.status}`);
-  }
-
-  return (await response.json()).choices[0].message.content as string;
-};
-
 export const POST = async (req: Request) => {
   try {
-    const { messages } = await req.json();
+    const { prompt } = (await req.json()) as { prompt?: string };
     const signal = req.signal;
 
-    const imagePrompt = await chatCompletion(
-      IMAGE_PROMPT_SYSTEM_PROMPT,
-      messages,
-      signal,
-    );
+    const imagePrompt = prompt?.trim();
+    if (!imagePrompt) {
+      return Response.json({ error: "缺少图片生成 prompt" }, { status: 400 });
+    }
 
     const imageResponse = await fetch(
       `${process.env.LLM_API_BASE_URL}/v1/images/generations`,

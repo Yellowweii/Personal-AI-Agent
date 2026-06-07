@@ -14,9 +14,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 按功能模块拆分文件，便于查找和维护。新增或重构代码时遵循以下约定：
 
-- **interfaces/**：所有 TypeScript 类型与接口，按功能模块一文件（如 `chat.ts`、`textToSpeech.ts`、`speechToText.ts`）。不要在组件、hooks 或 API 路由内内联定义可复用类型。
+- **agent/types/**：Agent 领域模型（如 `message.ts`、`plan.ts`、`responseSlots.ts`）。跨层复用的核心数据结构放这里。
+- **interfaces/**：对外边界类型，按功能模块一文件（如 `chat.ts`、`textToSpeech.ts`、`generateTaskSpecs.ts`）。仅放 API 请求/响应、Hook 返回类型等契约，不放 Agent 领域模型。不要在组件、hooks 或 API 路由内内联定义可复用类型。
 - **constants/**：所有常量，按功能模块一文件（如 `ui.ts`、`textToSpeech.ts`）。魔法字符串、默认配置等放对应模块文件。
 - **constants/systemPrompts.ts**：所有 system prompt 一律集中在此文件，不论属于哪个功能模块（如意图识别、文生图、文生视频）。不要在其他 constants 文件或 API 路由内内联定义。
 - **svgs/**：所有 SVG 图标组件，按功能模块一文件（如 `chat.tsx`、`speechToText.tsx`）。页面内联 SVG 应提取到此目录。
 
-命名与现有文件保持一致：文件名与模块/能力对应，从 `@/interfaces/*`、`@/constants/*`、`@/svgs/*` 导入。
+命名与现有文件保持一致：文件名与模块/能力对应。领域类型从 `@/agent/types/*` 导入；API / Hook 契约从 `@/interfaces/*`；常量从 `@/constants/*`；图标从 `@/svgs/*` 导入。

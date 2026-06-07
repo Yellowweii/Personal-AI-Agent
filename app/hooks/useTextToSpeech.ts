@@ -15,7 +15,7 @@ import type { TtsJob, UseTextToSpeechReturn } from "@/interfaces/textToSpeech";
 import {
   extractTextSlices,
   fetchTextToSpeechStream,
-} from "@/lib/textToSpeech";
+} from "@/agent/tools/textToSpeech";
 
 const sleep = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -222,9 +222,7 @@ export const useTextToSpeech = (): UseTextToSpeechReturn => {
         if (error instanceof Error && error.name === "AbortError") {
           throw error;
         }
-        throw error instanceof Error
-          ? error
-          : new Error("TTS 音频流读取失败");
+        throw error instanceof Error ? error : new Error("TTS 音频流读取失败");
       } finally {
         reader.releaseLock();
       }

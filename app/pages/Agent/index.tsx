@@ -2,15 +2,16 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useChat } from "@/hooks/useChat";
+import { useImageUpload } from "@/hooks/useImageUpload";
 import { useSpeechToText } from "@/hooks/useSpeechToText";
-import { speechToText } from "@/lib/speechToText";
-import { ChatHeader } from "@/pages/ChatBot/components/ChatHeader";
-import { EmptyState } from "@/pages/ChatBot/components/EmptyState";
-import { MessageBubble } from "@/pages/ChatBot/components/MessageBubble";
-import { LoadingIndicator } from "@/pages/ChatBot/components/LoadingIndicator";
-import { ChatInput } from "@/pages/ChatBot/components/ChatInput";
+import { speechToText } from "@/agent/tools/speechToText";
+import { ChatHeader } from "@/pages/Agent/components/ChatHeader";
+import { EmptyState } from "@/pages/Agent/components/EmptyState";
+import { MessageBubble } from "@/pages/Agent/components/MessageBubble";
+import { LoadingIndicator } from "@/pages/Agent/components/LoadingIndicator";
+import { ChatInput } from "@/pages/Agent/components/ChatInput";
 
-export const ChatBot = () => {
+export const Agent = () => {
   const {
     messages,
     input,
@@ -33,20 +34,38 @@ export const ChatBot = () => {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  const {
+    pendingImagePreview,
+    pendingImageUrl,
+    isUploading,
+    uploadProgress,
+    uploadError,
+    handleImageSelect,
+    clearPendingImage,
+    clearUploadError,
+  } = useImageUpload();
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (
-      !input.trim() ||
+      (!input.trim() && !pendingImageUrl) ||
       isLoading ||
       status === "recording" ||
-      isTranscribing
+      isTranscribing ||
+      isUploading
     ) {
       return;
     }
-    handleSend(input);
+
+    clearUploadError();
+
+    const content = input;
+    const userImageUrl = pendingImageUrl ?? undefined;
+    clearPendingImage();
+    await handleSend(content, userImageUrl);
   };
 
   const handleStartVoice = useCallback(async () => {
@@ -88,10 +107,9 @@ export const ChatBot = () => {
             />
           ))}
 
-          {isLoading &&
-            messages[messages.length - 1]?.role !== "assistant" && (
-              <LoadingIndicator />
-            )}
+          {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
+            <LoadingIndicator />
+          )}
 
           <div ref={bottomRef} />
         </div>
@@ -107,6 +125,13 @@ export const ChatBot = () => {
             isLoading={isLoading}
             isRecording={status === "recording"}
             isTranscribing={isTranscribing}
+            isUploading={isUploading}
+            uploadProgress={uploadProgress}
+            pendingImagePreview={pendingImagePreview}
+            pendingImageUrl={pendingImageUrl}
+            uploadError={uploadError}
+            onImageSelect={handleImageSelect}
+            onImageRemove={clearPendingImage}
             onStartVoice={handleStartVoice}
             onStopVoice={handleStopVoice}
             isVoiceSupported={isSupported}

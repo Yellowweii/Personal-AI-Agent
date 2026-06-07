@@ -1,10 +1,15 @@
 import { DETECT_INTENT_SYSTEM_PROMPT } from "@/constants/systemPrompts";
-import { normalizeTaskOutputs } from "@/utils/normalizeTaskOutputs";
+import type { Message } from "@/agent/types/message";
+import { normalizePlan } from "@/lib/normalizePlan";
 
 export const POST = async (req: Request) => {
   try {
-    const { messages } = await req.json();
+    const { messages } = (await req.json()) as { messages: Message[] };
     const signal = req.signal;
+    const apiMessages = messages.map(({ role, content }) => ({
+      role,
+      content,
+    }));
 
     const intentResponse = await fetch(
       `${process.env.LLM_API_BASE_URL}/v1/chat/completions`,
@@ -18,7 +23,7 @@ export const POST = async (req: Request) => {
           model: process.env.LLM_TEXT_MODEL,
           messages: [
             { role: "system", content: DETECT_INTENT_SYSTEM_PROMPT },
-            ...messages,
+            ...apiMessages,
           ],
         }),
         signal,
@@ -27,7 +32,7 @@ export const POST = async (req: Request) => {
 
     if (!intentResponse.ok) {
       return Response.json(
-        { error: "意图判断失败，请稍后重试" },
+        { error: "任务规划失败，请稍后重试" },
         { status: intentResponse.status },
       );
     }
@@ -35,9 +40,7 @@ export const POST = async (req: Request) => {
     const raw = (await intentResponse.json()).choices[0].message
       .content as string;
 
-    return Response.json({
-      outputs: normalizeTaskOutputs(raw),
-    });
+    return Response.json(normalizePlan(raw));
   } catch (error) {
     console.error("detectIntent error:", error);
     return Response.json({ error: "服务器内部错误" }, { status: 500 });

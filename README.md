@@ -53,7 +53,7 @@ app/
 │   └── speechToText/     # 语音转文字
 ├── hooks/                # useChat · useTextToSpeech · useSpeechToText
 ├── lib/                  # 前端 API 封装
-├── pages/ChatBot/        # Agent 主界面
+├── pages/Agent/          # Agent 主界面
 ├── constants/            # 系统提示词、UI 文案
 └── public/               # 静态资源
 ```

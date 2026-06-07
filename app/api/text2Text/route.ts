@@ -1,15 +1,11 @@
-import { MULTIMODAL_SYSTEM_PROMPT } from "@/constants/systemPrompts";
-
 export const POST = async (req: Request) => {
-  const { messages, mode } = await req.json();
+  const { prompt } = (await req.json()) as { prompt?: string };
   const signal = req.signal;
 
-  const systemPrompt =
-    mode === "multimodal" ? MULTIMODAL_SYSTEM_PROMPT : undefined;
-
-  const apiMessages = systemPrompt
-    ? [{ role: "system", content: systemPrompt }, ...messages]
-    : messages;
+  const taskPrompt = prompt?.trim();
+  if (!taskPrompt) {
+    return Response.json({ error: "缺少文本生成 prompt" }, { status: 400 });
+  }
 
   const response = await fetch(
     `${process.env.LLM_API_BASE_URL}/v1/chat/completions`,
@@ -21,7 +17,7 @@ export const POST = async (req: Request) => {
       },
       body: JSON.stringify({
         model: process.env.LLM_TEXT_MODEL,
-        messages: apiMessages,
+        messages: [{ role: "user", content: taskPrompt }],
         stream: true,
       }),
       signal,
