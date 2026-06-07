@@ -1,4 +1,5 @@
 import { DETECT_INTENT_SYSTEM_PROMPT } from "@/constants/systemPrompts";
+import { normalizeTaskOutputs } from "@/utils/normalizeTaskOutputs";
 
 export const POST = async (req: Request) => {
   try {
@@ -31,8 +32,11 @@ export const POST = async (req: Request) => {
       );
     }
 
+    const raw = (await intentResponse.json()).choices[0].message
+      .content as string;
+
     return Response.json({
-      intent: (await intentResponse.json()).choices[0].message.content,
+      outputs: normalizeTaskOutputs(raw),
     });
   } catch (error) {
     console.error("detectIntent error:", error);

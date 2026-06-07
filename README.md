@@ -4,9 +4,10 @@
 
 ## 功能特性
 
-- **意图识别**：自动判断任务类型（纯文字 / 生图 / 文字 + 图片）
+- **意图识别**：解析用户需要哪些输出（文字 / 图片 / 视频，可任意组合）
 - **文生文**：流式输出，支持多轮上下文
 - **文生图**：根据任务上下文生成图片
+- **文生视频**：基于 Agnes Video V2.0 异步生成视频
 - **语音输入（STT）**：浏览器录音，上传后转写为文字
 - **语音播报（TTS）**：LLM 边输出边合成，按句排队无缝播放
 - **任务中断**：支持停止生成与停止播报
@@ -15,13 +16,17 @@
 
 ### 意图识别与多模态路由
 
-用户提交任务后，Agent 通过 `detectIntent` 判断执行路径，再分别调用 `textToText`、`textToImage` 等能力：
+用户提交任务后，Agent 通过 `detectIntent` 解析 `TaskOutputs`（`text` / `image` / `video` 布尔组合），再并行调用对应能力并合并展示：
 
-| 意图 | 行为 |
-|------|------|
-| `TEXT` | 流式文字回复 |
-| `IMAGE` | 生成图片并展示 |
-| `MULTIMODAL` | 并行生成文字与图片，文字按 chunk 流式回放 |
+| 输出组合 | 行为 |
+|----------|------|
+| 仅 `text` | 流式文字回复 |
+| 仅 `image` | 生成图片 |
+| 仅 `video` | 生成视频（异步轮询） |
+| `text` + `image` | 并行生成文字与图片 |
+| `text` + `video` | 并行生成文字与视频 |
+| `text` + `image` + `video` | 三者并行生成 |
+| `image` + `video` | 并行生成图片与视频 |
 
 ### 流式 TTS 播报
 
@@ -31,7 +36,7 @@
 
 - **框架**：Next.js 16 · React 19 · TypeScript
 - **样式**：Tailwind CSS 4
-- **LLM**：OpenAI 兼容 API（文生文 / 意图识别 / 文生图）
+- **LLM**：OpenAI 兼容 API（文生文 / 意图识别 / 文生图 / 文生视频）
 - **STT**：OpenAI 兼容 API 或 SiliconFlow 等
 - **TTS**：Azure Cognitive Services Speech
 
@@ -43,6 +48,7 @@ app/
 │   ├── detectIntent/     # 意图识别
 │   ├── text2Text/        # 文生文（流式）
 │   ├── text2Image/       # 文生图
+│   ├── text2Video/       # 文生视频（Agnes Video V2.0）
 │   ├── text2Speech/      # 文字转语音
 │   └── speechToText/     # 语音转文字
 ├── hooks/                # useChat · useTextToSpeech · useSpeechToText
@@ -74,6 +80,9 @@ cp .env.example .env.local
 | `LLM_API_KEY` | LLM API Key |
 | `LLM_TEXT_MODEL` | 文生文 / 意图识别模型 |
 | `LLM_IMAGE_MODEL` | 文生图模型 |
+| `LLM_VIDEO_MODEL` | 文生视频模型，如 `agnes-video-v2.0` |
+| `LLM_VIDEO_NUM_FRAMES` | 视频帧数（可选，须为 81/121/161/241/441） |
+| `LLM_VIDEO_FRAME_RATE` | 视频帧率（可选，默认 24） |
 | `STT_API_BASE_URL` | 语音转文字 API 地址 |
 | `STT_API_KEY` | STT API Key |
 | `LLM_STT_MODEL` / `DEFAULT_STT_MODEL` | STT 模型 |

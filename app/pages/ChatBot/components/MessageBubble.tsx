@@ -80,6 +80,22 @@ export const MessageBubble = ({ message, bottomRef }: MessageBubbleProps) => {
                 />
               </div>
             )}
+            {message.videoPrefix && (
+              <div className="min-w-0 text-white/60">{message.videoPrefix}</div>
+            )}
+            {message.videoUrl && (
+              <div className="rounded-xl overflow-hidden max-w-full shrink-0">
+                <video
+                  src={message.videoUrl}
+                  controls
+                  playsInline
+                  className="max-w-full sm:max-w-[400px] max-h-[300px] w-auto"
+                  onLoadedData={() =>
+                    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+                  }
+                />
+              </div>
+            )}
             {message.content && (
               <div className="min-w-0">{message.content}</div>
             )}

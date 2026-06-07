@@ -6,10 +6,16 @@ export interface Message {
   timestamp: Date;
   imagePrefix?: string;
   imageUrl?: string;
+  videoPrefix?: string;
+  videoUrl?: string;
 }
 
-// 意图类型
-export type Intent = "TEXT" | "IMAGE" | "MULTIMODAL";
+/** 用户任务需要生成的输出类型（可组合） */
+export interface TaskOutputs {
+  text: boolean;
+  image: boolean;
+  video: boolean;
+}
 
 // useChat hook 返回类型
 export interface UseChatReturn {
@@ -25,7 +31,7 @@ export interface UseChatReturn {
 
 // API 响应类型
 export interface DetectIntentResponse {
-  intent: Intent;
+  outputs: TaskOutputs;
 }
 
 export interface TextToImageResponse {

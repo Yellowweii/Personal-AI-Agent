@@ -1,9 +1,15 @@
-import type { Intent, Message } from "@/interfaces/chat";
+import type { Message, TaskOutputs } from "@/interfaces/chat";
+import {
+  DEFAULT_TASK_OUTPUTS,
+  normalizeTaskOutputs,
+} from "@/utils/normalizeTaskOutputs";
+
+export { DEFAULT_TASK_OUTPUTS, normalizeTaskOutputs };
 
 export const detectIntent = async (
   messages: Message[],
   signal?: AbortSignal,
-): Promise<Intent> => {
+): Promise<TaskOutputs> => {
   const response = await fetch("/api/detectIntent", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -15,12 +21,7 @@ export const detectIntent = async (
     throw new Error("意图判断失败，请稍后重试");
   }
 
-  const data: { intent: string } = await response.json();
-  const intent = data?.intent?.trim().toUpperCase();
+  const data: { outputs?: TaskOutputs } = await response.json();
 
-  if (intent === "IMAGE" || intent === "MULTIMODAL") {
-    return intent;
-  }
-
-  return "TEXT";
+  return data.outputs ?? DEFAULT_TASK_OUTPUTS;
 };

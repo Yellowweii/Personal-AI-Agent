@@ -5,7 +5,9 @@ import type { Message, UseChatReturn } from "@/interfaces/chat";
 import { detectIntent } from "@/lib/detectIntent";
 import { textToText } from "@/lib/textToText";
 import { textToImage } from "@/lib/textToImage";
+import { textToVideo } from "@/lib/textToVideo";
 import { CHAT_ERROR_MESSAGE, IMAGE_GENERATING_PREFIX } from "@/constants/ui";
+import { VIDEO_GENERATING_PREFIX } from "@/constants/text2Video";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 
 export const useChat = (): UseChatReturn => {
@@ -86,9 +88,17 @@ export const useChat = (): UseChatReturn => {
       abortControllerRef.current = controller;
 
       try {
-        const intent = await detectIntent(newMessages, controller.signal);
+        const outputs = await detectIntent(newMessages, controller.signal);
+        const hasMedia = outputs.image || outputs.video;
 
-        if (intent === "TEXT") {
+        if (outputs.image) {
+          upsertAssistant({ imagePrefix: IMAGE_GENERATING_PREFIX });
+        }
+        if (outputs.video) {
+          upsertAssistant({ videoPrefix: VIDEO_GENERATING_PREFIX });
+        }
+
+        if (outputs.text && !hasMedia) {
           await resetTTS();
 
           await textToText(
@@ -99,13 +109,12 @@ export const useChat = (): UseChatReturn => {
           );
 
           flush();
-        } else if (intent === "MULTIMODAL" || intent === "IMAGE") {
-          upsertAssistant({ imagePrefix: IMAGE_GENERATING_PREFIX });
+        } else {
+          const bufferedChunks: string[] = [];
+          const tasks: Promise<void>[] = [];
 
-          if (intent === "MULTIMODAL") {
-            const bufferedChunks: string[] = [];
-
-            await Promise.all([
+          if (outputs.text) {
+            tasks.push(
               textToText(
                 newMessages,
                 (chunk) => bufferedChunks.push(chunk),
@@ -113,11 +122,28 @@ export const useChat = (): UseChatReturn => {
                 controller.signal,
                 "multimodal",
               ),
+            );
+          }
+
+          if (outputs.image) {
+            tasks.push(
               textToImage(newMessages, controller.signal).then(({ imageUrl }) =>
                 upsertAssistant({ imageUrl }),
               ),
-            ]);
+            );
+          }
 
+          if (outputs.video) {
+            tasks.push(
+              textToVideo(newMessages, controller.signal).then(({ videoUrl }) =>
+                upsertAssistant({ videoUrl }),
+              ),
+            );
+          }
+
+          await Promise.all(tasks);
+
+          if (outputs.text) {
             await resetTTS();
 
             accumulated = "";
@@ -129,12 +155,6 @@ export const useChat = (): UseChatReturn => {
             }
 
             flush();
-          } else {
-            const { imageUrl } = await textToImage(
-              newMessages,
-              controller.signal,
-            );
-            upsertAssistant({ imageUrl });
           }
         }
       } catch (err) {
