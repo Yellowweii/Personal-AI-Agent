@@ -8,7 +8,7 @@ export const DEFAULT_VIDEO_WIDTH = 1152;
 export const DEFAULT_VIDEO_HEIGHT = 768;
 
 export const VIDEO_POLL_INTERVAL_MS = 10_000;
-export const VIDEO_MAX_DURATION_S = 600;
+export const VIDEO_MAX_DURATION_S = 300;
 export const VIDEO_MAX_WAIT_MS = VIDEO_MAX_DURATION_S * 1000;
 
 export const VIDEO_GENERATING_PREFIX =

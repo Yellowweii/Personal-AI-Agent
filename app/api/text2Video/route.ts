@@ -13,7 +13,7 @@ import {
 import type { VideoTaskResponse } from "@/interfaces/text2Video";
 import { calcTotalFrames } from "@/utils/calcTotalFrames";
 
-export const maxDuration = 600;
+export const maxDuration = 300;
 
 const sleep = (ms: number, signal: AbortSignal) =>
   new Promise<void>((resolve, reject) => {
