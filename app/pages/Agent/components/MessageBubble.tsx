@@ -1,16 +1,13 @@
 /* eslint-disable @next/next/no-img-element */
 import type { Message } from "@/agent/types/message";
 import type { ResponseSlot } from "@/agent/types/responseSlots";
-import { LoadingDots } from "@/pages/Agent/components/LoadingDots";
 import { MessageTimestamp } from "@/pages/Agent/components/MessageTimestamp";
-import { AGENT_PENDING_LABEL } from "@/constants/ui";
 import { getMessageImageUrl, getMessageText } from "@/lib/messageContent";
 import { sortSlotsForDisplay } from "@/lib/responseSlots";
 
 interface MessageBubbleProps {
   message: Message;
   bottomRef: React.RefObject<HTMLDivElement | null>;
-  showLoading?: boolean;
 }
 
 const UserAvatar = () => (
@@ -89,18 +86,13 @@ const AssistantSlot = ({
   }
 };
 
-export const MessageBubble = ({
-  message,
-  bottomRef,
-  showLoading = false,
-}: MessageBubbleProps) => {
+export const MessageBubble = ({ message, bottomRef }: MessageBubbleProps) => {
   const isUser = message.role === "user";
   const userText = isUser ? getMessageText(message) : "";
   const userImageUrl = isUser ? getMessageImageUrl(message) : undefined;
   const assistantSlots = !isUser
     ? sortSlotsForDisplay(message.slots ?? [])
     : [];
-  const showAssistantPending = !isUser && showLoading && assistantSlots.length === 0;
 
   return (
     <div className={`flex gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
@@ -139,20 +131,9 @@ export const MessageBubble = ({
           </div>
         ) : (
           <div className="inline-flex max-w-full flex-col gap-3 rounded-2xl px-4 py-3 text-left text-sm leading-relaxed text-white/90 bg-white/5 rounded-tl-sm whitespace-pre-wrap wrap-break-word">
-            {showAssistantPending ? (
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="text-white/60">{AGENT_PENDING_LABEL}</span>
-                <LoadingDots />
-              </div>
-            ) : (
-              assistantSlots.map((slot) => (
-                <AssistantSlot
-                  key={slot.id}
-                  slot={slot}
-                  bottomRef={bottomRef}
-                />
-              ))
-            )}
+            {assistantSlots.map((slot) => (
+              <AssistantSlot key={slot.id} slot={slot} bottomRef={bottomRef} />
+            ))}
           </div>
         )}
 
