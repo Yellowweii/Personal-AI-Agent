@@ -1,3 +1,5 @@
+import { LoadingDots } from "@/pages/Agent/components/LoadingDots";
+
 export const LoadingIndicator = () => {
   return (
     <div className="flex gap-3">
@@ -18,20 +20,7 @@ export const LoadingIndicator = () => {
       </div>
       <div className="flex-1">
         <div className="inline-block px-4 py-3 rounded-2xl rounded-tl-sm bg-white/5">
-          <div className="flex items-center gap-1.5">
-            <span
-              className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce"
-              style={{ animationDelay: "0ms" }}
-            />
-            <span
-              className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce"
-              style={{ animationDelay: "150ms" }}
-            />
-            <span
-              className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce"
-              style={{ animationDelay: "300ms" }}
-            />
-          </div>
+          <LoadingDots />
         </div>
       </div>
     </div>

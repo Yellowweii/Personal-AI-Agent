@@ -99,11 +99,16 @@ export const Agent = () => {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 space-y-4 sm:space-y-6">
           {messages.length === 0 && <EmptyState />}
 
-          {messages.map((message) => (
+          {messages.map((message, index) => (
             <MessageBubble
               key={message.id}
               message={message}
               bottomRef={bottomRef}
+              showLoading={
+                isLoading &&
+                index === messages.length - 1 &&
+                message.role === "assistant"
+              }
             />
           ))}
 
