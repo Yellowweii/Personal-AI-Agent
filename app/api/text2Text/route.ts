@@ -1,5 +1,7 @@
+import type { Text2TextRequest } from "@/interfaces/text2Text";
+
 export const POST = async (req: Request) => {
-  const { prompt } = (await req.json()) as { prompt?: string };
+  const { prompt } = (await req.json()) as Text2TextRequest;
   const signal = req.signal;
 
   const taskPrompt = prompt?.trim();
@@ -13,7 +15,7 @@ export const POST = async (req: Request) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: "Bearer " + process.env.LLM_API_KEY,
+        Authorization: `Bearer ${process.env.LLM_API_KEY}`,
       },
       body: JSON.stringify({
         model: process.env.LLM_TEXT_MODEL,

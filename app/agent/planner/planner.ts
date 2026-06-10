@@ -11,7 +11,6 @@ import {
   patchContentEntry,
   type ContentPartEntry,
 } from "@/lib/messageContent";
-
 export interface RunAgentPipelineOptions {
   messages: Message[];
   signal: AbortSignal;

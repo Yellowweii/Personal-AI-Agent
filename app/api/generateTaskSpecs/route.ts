@@ -1,6 +1,6 @@
 import { TASK_SPEC_GENERATION_SYSTEM_PROMPT } from "@/constants/systemPrompts";
 import type { GenerateTaskSpecsRequest } from "@/interfaces/generateTaskSpecs";
-import { getMessageText, hasUserImage } from "@/lib/messageContent";
+import { getMessageText, toLlmApiMessages } from "@/lib/messageContent";
 import { normalizeTaskSpecs } from "@/lib/normalizeTaskSpecs";
 
 export const POST = async (req: Request) => {
@@ -14,17 +14,8 @@ export const POST = async (req: Request) => {
 
     const latestUser = [...messages].reverse().find((m) => m.role === "user");
     const fallbackPrompt = latestUser ? getMessageText(latestUser) : "";
-    const userHasImage = latestUser ? hasUserImage(latestUser) : false;
 
-    const apiMessages = messages.map(({ role, content }) => ({
-      role,
-      content,
-    }));
-
-    const plannerContext = {
-      steps,
-      userHasImage,
-    };
+    const apiMessages = toLlmApiMessages(messages);
 
     const specResponse = await fetch(
       `${process.env.LLM_API_BASE_URL}/v1/chat/completions`,
@@ -41,7 +32,7 @@ export const POST = async (req: Request) => {
             ...apiMessages,
             {
               role: "user",
-              content: `Planner 工具列表：${JSON.stringify(plannerContext)}`,
+              content: `Planner 工具列表：${JSON.stringify(steps)}`,
             },
           ],
         }),

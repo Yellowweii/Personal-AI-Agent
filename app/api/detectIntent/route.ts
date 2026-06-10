@@ -1,6 +1,10 @@
 import { DETECT_INTENT_SYSTEM_PROMPT } from "@/constants/systemPrompts";
 import type { Message } from "@/agent/types/message";
-import { getMessageText, hasUserImage } from "@/lib/messageContent";
+import {
+  getMessageText,
+  hasUserImage,
+  toLlmApiMessages,
+} from "@/lib/messageContent";
 import { normalizePlan } from "@/lib/normalizePlan";
 
 export const POST = async (req: Request) => {
@@ -14,13 +18,12 @@ export const POST = async (req: Request) => {
       hasUserImage(latestUser) &&
       !getMessageText(latestUser).trim()
     ) {
-      return Response.json({ steps: [{ tool: "image_understanding" }] });
+      return Response.json({
+        steps: [{ tool: "image_understanding", dependsOn: [] }],
+      });
     }
 
-    const apiMessages = messages.map(({ role, content }) => ({
-      role,
-      content,
-    }));
+    const apiMessages = toLlmApiMessages(messages);
 
     const intentResponse = await fetch(
       `${process.env.LLM_API_BASE_URL}/v1/chat/completions`,

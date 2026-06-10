@@ -2,22 +2,43 @@ import {
   VALID_TOOL_NAMES,
   type PlanResponse,
   type ToolCall,
+  type ToolName,
 } from "@/agent/types/plan";
 
 export const DEFAULT_PLAN: PlanResponse = {
-  steps: [{ tool: "chat" }],
+  steps: [{ tool: "chat", dependsOn: [] }],
 };
 
-const isValidToolCall = (value: unknown): value is ToolCall => {
-  if (!value || typeof value !== "object") {
-    return false;
+const isValidToolName = (value: unknown): value is ToolName =>
+  typeof value === "string" &&
+  VALID_TOOL_NAMES.includes(value as ToolName);
+
+const parseDependsOn = (value: unknown): ToolName[] => {
+  if (!Array.isArray(value)) {
+    return [];
   }
 
-  const tool = (value as { tool?: unknown }).tool;
-  return (
-    typeof tool === "string" &&
-    VALID_TOOL_NAMES.includes(tool as ToolCall["tool"])
-  );
+  return value.filter((dep): dep is ToolName => isValidToolName(dep));
+};
+
+const parseToolCall = (value: unknown): ToolCall | null => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const { tool, dependsOn } = value as {
+    tool?: unknown;
+    dependsOn?: unknown;
+  };
+
+  if (!isValidToolName(tool)) {
+    return null;
+  }
+
+  return {
+    tool,
+    dependsOn: parseDependsOn(dependsOn),
+  };
 };
 
 export const normalizePlan = (value: unknown): PlanResponse => {
@@ -44,7 +65,10 @@ export const normalizePlan = (value: unknown): PlanResponse => {
     return DEFAULT_PLAN;
   }
 
-  const normalizedSteps = steps.filter(isValidToolCall);
+  const normalizedSteps = steps
+    .map(parseToolCall)
+    .filter((step): step is ToolCall => Boolean(step));
+
   if (normalizedSteps.length === 0) {
     return DEFAULT_PLAN;
   }

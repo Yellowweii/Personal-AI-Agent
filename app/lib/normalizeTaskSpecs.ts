@@ -46,6 +46,7 @@ export const buildFallbackTaskSpecs = (
   taskSpecs: steps.map((step) => ({
     tool: step.tool,
     prompt: resolveFallbackPrompt(step.tool, fallbackPrompt),
+    dependsOn: step.dependsOn,
   })),
 });
 
@@ -81,11 +82,20 @@ export const normalizeTaskSpecs = (
   for (const item of taskSpecs) {
     if (!isValidTaskSpec(item)) continue;
     if (!steps.some((step) => step.tool === item.tool)) continue;
-    specByTool.set(item.tool, { tool: item.tool, prompt: item.prompt.trim() });
+    specByTool.set(item.tool, {
+      tool: item.tool,
+      prompt: item.prompt.trim(),
+      dependsOn: [],
+    });
   }
 
   const normalizedSpecs = steps
-    .map((step) => specByTool.get(step.tool))
+    .map((step) => {
+      const spec = specByTool.get(step.tool);
+      if (!spec) return null;
+
+      return { ...spec, dependsOn: step.dependsOn };
+    })
     .filter((spec): spec is TaskSpec => Boolean(spec));
 
   if (normalizedSpecs.length === 0) {

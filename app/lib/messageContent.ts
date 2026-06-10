@@ -54,6 +54,45 @@ export const getMessageImageUrl = (message: Message): string | undefined => {
 export const hasUserImage = (message: Message): boolean =>
   Boolean(getMessageImageUrl(message));
 
+type LlmContentPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
+
+export type LlmApiMessage = {
+  role: "user" | "assistant";
+  content: string | LlmContentPart[];
+};
+
+export const toLlmApiMessages = (messages: Message[]): LlmApiMessage[] =>
+  messages.flatMap((message) => {
+    const parts: LlmContentPart[] = [];
+
+    for (const part of message.content) {
+      if (part.type === "text" && part.text?.trim()) {
+        parts.push({ type: "text", text: part.text });
+      } else if (part.type === "image" && part.image_url) {
+        parts.push({
+          type: "image_url",
+          image_url: { url: part.image_url },
+        });
+      }
+    }
+
+    if (parts.length === 0) {
+      return [];
+    }
+
+    return [
+      {
+        role: message.role,
+        content:
+          parts.length === 1 && parts[0].type === "text"
+            ? parts[0].text
+            : parts,
+      },
+    ];
+  });
+
 export const entriesToContent = (
   entries: ContentPartEntry[],
 ): MessageContentPart[] => entries.map((entry) => entry.part);

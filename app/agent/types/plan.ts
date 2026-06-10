@@ -1,12 +1,15 @@
-export type ToolCall =
-  | { tool: "chat" }
-  | { tool: "image_understanding" }
-  | { tool: "image_generate" }
-  | { tool: "image_edit" }
-  | { tool: "video_generate" }
-  | { tool: "image_to_video" };
+export type ToolName =
+  | "chat"
+  | "image_understanding"
+  | "image_generate"
+  | "image_edit"
+  | "video_generate"
+  | "image_to_video";
 
-export type ToolName = ToolCall["tool"];
+export interface ToolCall {
+  tool: ToolName;
+  dependsOn: ToolName[];
+}
 
 export interface PlanResponse {
   steps: ToolCall[];
@@ -15,6 +18,7 @@ export interface PlanResponse {
 export interface TaskSpec {
   tool: ToolName;
   prompt: string;
+  dependsOn: ToolName[];
 }
 
 export interface TaskSpecPlan {
