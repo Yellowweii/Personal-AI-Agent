@@ -51,9 +51,6 @@ export const POST = async (req: Request) => {
     const raw = (await intentResponse.json()).choices[0].message
       .content as string;
 
-    console.log(raw);
-    console.log(normalizePlan(raw));
-
     return Response.json(normalizePlan(raw));
   } catch (error) {
     console.error("detectIntent error:", error);

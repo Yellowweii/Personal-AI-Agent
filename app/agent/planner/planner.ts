@@ -3,7 +3,6 @@ import type { MessageContentPart } from "@/agent/types/message";
 import { detectIntent } from "@/agent/planner/detectIntent";
 import { executeTaskSpec } from "@/agent/executor/executeTaskSpec";
 import { resolveTaskSpecs } from "@/agent/planner/resolveTaskSpecs";
-import { sortStepsByDisplayOrder } from "@/agent/planner/sortStepsByDisplayOrder";
 import {
   appendContentEntryText,
   createContentEntriesFromTaskSpecs,
@@ -29,8 +28,7 @@ export const runAgentPipeline = async (
     options;
 
   const plan = await detectIntent(messages, signal);
-  const steps = sortStepsByDisplayOrder(plan.steps);
-  const { taskSpecs } = await resolveTaskSpecs(messages, steps, signal);
+  const { taskSpecs } = await resolveTaskSpecs(messages, plan.steps, signal);
 
   const userMsg = [...messages].reverse().find((m) => m.role === "user");
   const imageUrl = userMsg ? getMessageImageUrl(userMsg) : undefined;

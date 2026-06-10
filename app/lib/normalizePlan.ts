@@ -1,4 +1,8 @@
-import { VALID_TOOL_NAMES, type PlanResponse, type ToolCall } from "@/agent/types/plan";
+import {
+  VALID_TOOL_NAMES,
+  type PlanResponse,
+  type ToolCall,
+} from "@/agent/types/plan";
 
 export const DEFAULT_PLAN: PlanResponse = {
   steps: [{ tool: "chat" }],
