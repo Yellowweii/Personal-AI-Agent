@@ -1,11 +1,22 @@
 import { DETECT_INTENT_SYSTEM_PROMPT } from "@/constants/systemPrompts";
 import type { Message } from "@/agent/types/message";
+import { getMessageText, hasUserImage } from "@/lib/messageContent";
 import { normalizePlan } from "@/lib/normalizePlan";
 
 export const POST = async (req: Request) => {
   try {
     const { messages } = (await req.json()) as { messages: Message[] };
     const signal = req.signal;
+
+    const latestUser = [...messages].reverse().find((m) => m.role === "user");
+    if (
+      latestUser &&
+      hasUserImage(latestUser) &&
+      !getMessageText(latestUser).trim()
+    ) {
+      return Response.json({ steps: [{ tool: "image_understanding" }] });
+    }
+
     const apiMessages = messages.map(({ role, content }) => ({
       role,
       content,
@@ -39,6 +50,9 @@ export const POST = async (req: Request) => {
 
     const raw = (await intentResponse.json()).choices[0].message
       .content as string;
+
+    console.log(raw);
+    console.log(normalizePlan(raw));
 
     return Response.json(normalizePlan(raw));
   } catch (error) {

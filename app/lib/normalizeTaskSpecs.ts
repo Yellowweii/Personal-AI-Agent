@@ -1,6 +1,29 @@
-import { VALID_TOOL_NAMES } from "@/constants/plan";
-import type { ToolCall } from "@/agent/types/plan";
-import type { TaskSpec, TaskSpecPlan } from "@/agent/types/plan";
+import {
+  IMAGE_ONLY_DEFAULT_PROMPT,
+  VALID_TOOL_NAMES,
+  type ToolCall,
+  type ToolName,
+  type TaskSpec,
+  type TaskSpecPlan,
+} from "@/agent/types/plan";
+
+const DEFAULT_TASK_PROMPT = "请完成该任务。";
+
+const resolveFallbackPrompt = (
+  tool: ToolName,
+  fallbackPrompt: string,
+): string => {
+  const trimmed = fallbackPrompt.trim();
+  if (trimmed) {
+    return trimmed;
+  }
+
+  if (tool === "image_understanding") {
+    return IMAGE_ONLY_DEFAULT_PROMPT;
+  }
+
+  return DEFAULT_TASK_PROMPT;
+};
 
 const isValidTaskSpec = (value: unknown): value is TaskSpec => {
   if (!value || typeof value !== "object") {
@@ -22,7 +45,7 @@ export const buildFallbackTaskSpecs = (
 ): TaskSpecPlan => ({
   taskSpecs: steps.map((step) => ({
     tool: step.tool,
-    prompt: fallbackPrompt.trim() || "请完成该任务。",
+    prompt: resolveFallbackPrompt(step.tool, fallbackPrompt),
   })),
 });
 

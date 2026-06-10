@@ -1,98 +1,122 @@
 /* eslint-disable @next/next/no-img-element */
 import type { Message } from "@/agent/types/message";
-import type { ResponseSlot } from "@/agent/types/responseSlots";
+import type { MessageContentPart } from "@/agent/types/message";
+import { LoadingDots } from "@/pages/Agent/components/LoadingIndicator";
 import { MessageTimestamp } from "@/pages/Agent/components/MessageTimestamp";
-import { getMessageImageUrl, getMessageText } from "@/lib/messageContent";
-import { sortSlotsForDisplay } from "@/lib/responseSlots";
+import { AssistantAvatarIcon, UserAvatarIcon } from "@/svgs/chat";
 
 interface MessageBubbleProps {
   message: Message;
   bottomRef: React.RefObject<HTMLDivElement | null>;
+  isGenerating?: boolean;
 }
 
-const UserAvatar = () => (
-  <svg
-    className="w-4 h-4"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-    />
-  </svg>
-);
+interface MediaPlaceholderProps {
+  label?: string;
+}
 
-const AssistantAvatar = () => (
-  <svg
-    className="w-4 h-4"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-    />
-  </svg>
-);
-
-const AssistantSlot = ({
-  slot,
-  bottomRef,
-}: {
-  slot: ResponseSlot;
+interface ContentPartViewProps {
+  part: MessageContentPart;
   bottomRef: React.RefObject<HTMLDivElement | null>;
-}) => {
-  if (slot.loadingLabel) {
-    return <div className="min-w-0 text-white/60">{slot.loadingLabel}</div>;
-  }
+  isUser: boolean;
+}
 
-  switch (slot.kind) {
+const partHasContentOrLoadingLabel = (part: MessageContentPart): boolean => {
+  switch (part.type) {
     case "text":
-      return slot.text ? <div className="min-w-0">{slot.text}</div> : null;
+      return Boolean(part.text || part.loadingLabel);
     case "image":
-      return slot.imageUrl ? (
-        <div className="rounded-xl overflow-hidden max-w-full shrink-0">
-          <img
-            src={slot.imageUrl}
-            alt="AI 生成"
-            className="max-w-full sm:max-w-[300px] max-h-[300px] w-auto object-cover"
-            onLoad={() =>
-              bottomRef.current?.scrollIntoView({ behavior: "smooth" })
-            }
-          />
-        </div>
-      ) : null;
+      return Boolean(part.image_url || part.loadingLabel);
     case "video":
-      return slot.videoUrl ? (
-        <div className="rounded-xl overflow-hidden max-w-full shrink-0">
-          <video
-            src={slot.videoUrl}
-            controls
-            playsInline
-            className="max-w-full sm:max-w-[400px] max-h-[300px] w-auto"
-            onLoadedData={() =>
-              bottomRef.current?.scrollIntoView({ behavior: "smooth" })
-            }
-          />
-        </div>
-      ) : null;
+      return Boolean(part.video_url || part.loadingLabel);
   }
 };
 
-export const MessageBubble = ({ message, bottomRef }: MessageBubbleProps) => {
+const ImagePlaceholder = ({ label }: MediaPlaceholderProps) => (
+  <div
+    className="flex h-[200px] w-full max-w-full shrink-0 items-center justify-center rounded-xl bg-white/10 sm:w-[300px] sm:max-w-[300px]"
+    aria-label={label ?? "图片生成中"}
+  >
+    {label && <span className="text-xs text-white/40">{label}</span>}
+  </div>
+);
+
+const VideoPlaceholder = ({ label }: MediaPlaceholderProps) => (
+  <div
+    className="flex h-[225px] w-full max-w-full shrink-0 items-center justify-center rounded-xl bg-white/10 sm:w-[400px] sm:max-w-[400px]"
+    aria-label={label ?? "视频生成中"}
+  >
+    {label && <span className="text-xs text-white/40">{label}</span>}
+  </div>
+);
+
+const ContentPartView = ({ part, bottomRef, isUser }: ContentPartViewProps) => {
+  switch (part.type) {
+    case "text":
+      if (part.text) {
+        return (
+          <div className="min-w-0 whitespace-pre-wrap wrap-break-word">
+            {part.text}
+          </div>
+        );
+      }
+      if (part.loadingLabel) {
+        return <div className="min-w-0 text-white/60">{part.loadingLabel}</div>;
+      }
+      return null;
+    case "image":
+      if (part.image_url) {
+        return (
+          <div className="overflow-hidden rounded-xl">
+            <img
+              src={part.image_url}
+              alt={isUser ? "用户上传" : "AI 生成"}
+              className={
+                isUser
+                  ? "max-h-[240px] max-w-full w-auto object-cover sm:max-w-[280px]"
+                  : "max-h-[300px] w-auto max-w-full object-cover sm:max-w-[300px]"
+              }
+              onLoad={() =>
+                bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+              }
+            />
+          </div>
+        );
+      }
+      if (isUser || !part.loadingLabel) return null;
+      return <ImagePlaceholder label={part.loadingLabel} />;
+    case "video":
+      if (part.video_url) {
+        return (
+          <div className="max-w-full shrink-0 overflow-hidden rounded-xl">
+            <video
+              src={part.video_url}
+              controls
+              playsInline
+              className="max-h-[300px] w-auto max-w-full sm:max-w-[400px]"
+              onLoadedData={() =>
+                bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+              }
+            />
+          </div>
+        );
+      }
+      if (!part.loadingLabel) return null;
+      return <VideoPlaceholder label={part.loadingLabel} />;
+  }
+};
+
+export const MessageBubble = ({
+  message,
+  bottomRef,
+  isGenerating,
+}: MessageBubbleProps) => {
   const isUser = message.role === "user";
-  const userText = isUser ? getMessageText(message) : "";
-  const userImageUrl = isUser ? getMessageImageUrl(message) : undefined;
-  const assistantSlots = !isUser
-    ? sortSlotsForDisplay(message.slots ?? [])
-    : [];
+  const hasContentOrLoadingLabel = message.content.some(
+    partHasContentOrLoadingLabel,
+  );
+  const showSharedLoadingDots =
+    !isUser && isGenerating && !hasContentOrLoadingLabel;
 
   return (
     <div className={`flex gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
@@ -103,39 +127,29 @@ export const MessageBubble = ({ message, bottomRef }: MessageBubbleProps) => {
             : "bg-linear-to-br from-purple-500 to-pink-500 text-white"
         }`}
       >
-        {isUser ? <UserAvatar /> : <AssistantAvatar />}
+        {isUser ? <UserAvatarIcon /> : <AssistantAvatarIcon />}
       </div>
 
       <div
         className={`flex-1 max-w-[85%] sm:max-w-[75%] ${isUser ? "text-right" : ""}`}
       >
-        {isUser ? (
-          <div className="inline-flex max-w-full flex-col gap-2 rounded-2xl rounded-tr-sm bg-blue-500 px-4 py-3 text-left text-sm leading-relaxed text-white">
-            {userImageUrl && (
-              <div className="overflow-hidden rounded-xl">
-                <img
-                  src={userImageUrl}
-                  alt="用户上传"
-                  className="max-h-[240px] max-w-full w-auto object-cover sm:max-w-[280px]"
-                  onLoad={() =>
-                    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
-                  }
-                />
-              </div>
-            )}
-            {userText && (
-              <div className="min-w-0 whitespace-pre-wrap wrap-break-word">
-                {userText}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="inline-flex max-w-full flex-col gap-3 rounded-2xl px-4 py-3 text-left text-sm leading-relaxed text-white/90 bg-white/5 rounded-tl-sm whitespace-pre-wrap wrap-break-word">
-            {assistantSlots.map((slot) => (
-              <AssistantSlot key={slot.id} slot={slot} bottomRef={bottomRef} />
-            ))}
-          </div>
-        )}
+        <div
+          className={`inline-flex max-w-full flex-col gap-3 rounded-2xl px-4 py-3 text-left text-sm leading-relaxed whitespace-pre-wrap wrap-break-word ${
+            isUser
+              ? "gap-2 rounded-tr-sm bg-blue-500 text-white"
+              : "rounded-tl-sm bg-white/5 text-white/90"
+          }`}
+        >
+          {message.content.map((part, index) => (
+            <ContentPartView
+              key={`${part.type}-${index}`}
+              part={part}
+              bottomRef={bottomRef}
+              isUser={isUser}
+            />
+          ))}
+          {showSharedLoadingDots && <LoadingDots />}
+        </div>
 
         <div className="mt-1 text-[10px] text-white/30">
           {isUser ? "你" : "Agent"}

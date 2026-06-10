@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import type { Message } from "@/agent/types/message";
-import type { ResponseSlot } from "@/agent/types/responseSlots";
+import type { MessageContentPart } from "@/agent/types/message";
 import type { UseChatReturn } from "@/interfaces/chat";
 import { runAgentPipeline } from "@/agent/planner/planner";
 import { CHAT_ERROR_MESSAGE } from "@/constants/ui";
@@ -51,8 +51,7 @@ export const useChat = (): UseChatReturn => {
       let assistantMsg: Message = {
         id: assistantId,
         role: "assistant",
-        content: "",
-        slots: [],
+        content: [],
         timestamp: new Date(),
       };
 
@@ -65,8 +64,8 @@ export const useChat = (): UseChatReturn => {
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
-      const applySlots = (slots: ResponseSlot[]) => {
-        assistantMsg = { ...assistantMsg, slots };
+      const applyContent = (contentParts: MessageContentPart[]) => {
+        assistantMsg = { ...assistantMsg, content: contentParts };
         setMessages([...contextMessages, assistantMsg]);
       };
 
@@ -74,7 +73,7 @@ export const useChat = (): UseChatReturn => {
         await runAgentPipeline({
           messages: contextMessages,
           signal: controller.signal,
-          onSlotsChange: applySlots,
+          onContentChange: applyContent,
           onTextChunk: feedText,
           resetTTS,
           flushTTS: flush,
@@ -91,7 +90,7 @@ export const useChat = (): UseChatReturn => {
           {
             id: crypto.randomUUID(),
             role: "assistant",
-            content: CHAT_ERROR_MESSAGE,
+            content: [{ type: "text", text: CHAT_ERROR_MESSAGE }],
             timestamp: new Date(),
           },
         ]);

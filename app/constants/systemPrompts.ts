@@ -3,7 +3,7 @@ export const DETECT_INTENT_SYSTEM_PROMPT = `你是一个任务规划器（Planne
 
 可用工具：
 - chat：文生文，文字回答、解释、翻译、总结、代码、问答
-- image_understanding：图片理解，分析用户上传的图片内容；用户消息 content 含 image_url 且需要识图时使用
+- image_understanding：图片理解，分析用户上传的图片内容；用户消息 content 含 image 且需要识图时使用
 - image_generate：文生图，根据文字描述生成全新图片
 - image_edit：图生图/图片编辑，基于用户上传的图片进行修改、重绘、风格化
 - video_generate：文生视频，根据文字描述生成视频
@@ -11,7 +11,7 @@ export const DETECT_INTENT_SYSTEM_PROMPT = `你是一个任务规划器（Planne
 
 规划规则：
 - 所有 steps 将并行执行，顺序无关；只列出完成任务所需的工具集合
-- 用户消息 content 仅有 image_url、无 text 部分（只发图不说话）→ [{"tool":"image_understanding"}]，禁止返回 chat
+- 用户消息 content 仅有 image、无 text 部分（只发图不说话）→ [{"tool":"image_understanding"}]，禁止返回 chat
 - 用户要求「画一张猫的图片并写100字介绍」→ image_generate + chat
 - 用户要求「根据这张图生成类似图片」→ image_understanding + image_generate
 - 用户要求「把这张图改成油画风格」→ image_understanding + image_edit

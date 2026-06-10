@@ -1,19 +1,22 @@
 import type { Message } from "@/agent/types/message";
-import type { ResponseSlot } from "@/agent/types/responseSlots";
+import type { MessageContentPart } from "@/agent/types/message";
 import { detectIntent } from "@/agent/planner/detectIntent";
 import { executeTaskSpec } from "@/agent/executor/executeTaskSpec";
-import { generateTaskSpecs } from "@/agent/planner/generateTaskSpecs";
-import { getMessageImageUrl } from "@/lib/messageContent";
+import { resolveTaskSpecs } from "@/agent/planner/resolveTaskSpecs";
+import { sortStepsByDisplayOrder } from "@/agent/planner/sortStepsByDisplayOrder";
 import {
-  appendSlotText,
-  createSlotsFromTaskSpecs,
-  patchSlot,
-} from "@/lib/responseSlots";
+  appendContentEntryText,
+  createContentEntriesFromTaskSpecs,
+  entriesToContent,
+  getMessageImageUrl,
+  patchContentEntry,
+  type ContentPartEntry,
+} from "@/lib/messageContent";
 
 export interface RunAgentPipelineOptions {
   messages: Message[];
   signal: AbortSignal;
-  onSlotsChange: (slots: ResponseSlot[]) => void;
+  onContentChange: (content: MessageContentPart[]) => void;
   onTextChunk?: (chunk: string) => void;
   resetTTS?: () => Promise<void>;
   flushTTS?: () => void;
@@ -22,23 +25,24 @@ export interface RunAgentPipelineOptions {
 export const runAgentPipeline = async (
   options: RunAgentPipelineOptions,
 ): Promise<void> => {
-  const { messages, signal, onSlotsChange, onTextChunk, resetTTS, flushTTS } =
+  const { messages, signal, onContentChange, onTextChunk, resetTTS, flushTTS } =
     options;
 
   const plan = await detectIntent(messages, signal);
-  const { taskSpecs } = await generateTaskSpecs(messages, plan.steps, signal);
+  const steps = sortStepsByDisplayOrder(plan.steps);
+  const { taskSpecs } = await resolveTaskSpecs(messages, steps, signal);
 
   const userMsg = [...messages].reverse().find((m) => m.role === "user");
   const imageUrl = userMsg ? getMessageImageUrl(userMsg) : undefined;
 
-  let slots = createSlotsFromTaskSpecs(taskSpecs);
-  onSlotsChange(slots);
+  let entries = createContentEntriesFromTaskSpecs(taskSpecs);
+  onContentChange(entriesToContent(entries));
 
-  const updateSlots = (
-    updater: (current: ResponseSlot[]) => ResponseSlot[],
+  const updateEntries = (
+    updater: (current: ContentPartEntry[]) => ContentPartEntry[],
   ) => {
-    slots = updater(slots);
-    onSlotsChange(slots);
+    entries = updater(entries);
+    onContentChange(entriesToContent(entries));
   };
 
   const hasTextStream = taskSpecs.some(
@@ -50,7 +54,7 @@ export const runAgentPipeline = async (
 
   await Promise.all(
     taskSpecs.map(async (spec, index) => {
-      const slotId = `${spec.tool}-${index}`;
+      const partId = `${spec.tool}-${index}`;
       if (signal.aborted) {
         throw new DOMException("Aborted", "AbortError");
       }
@@ -59,23 +63,22 @@ export const runAgentPipeline = async (
         spec,
         { imageUrl },
         {
-          slotId,
+          partId,
           signal,
-          onSlotStart: (loadingLabel) => {
-            updateSlots((current) =>
-              patchSlot(current, slotId, {
-                loadingLabel,
-                shownAt: Date.now(),
-              }),
+          onPartStart: (loadingLabel) => {
+            updateEntries((current) =>
+              patchContentEntry(current, partId, { loadingLabel }),
             );
           },
-          onSlotTextChunk: (chunk) => {
-            updateSlots((current) => appendSlotText(current, slotId, chunk));
+          onPartTextChunk: (chunk) => {
+            updateEntries((current) =>
+              appendContentEntryText(current, partId, chunk),
+            );
             onTextChunk?.(chunk);
           },
-          onSlotComplete: (patch) => {
-            updateSlots((current) =>
-              patchSlot(current, slotId, {
+          onPartComplete: (patch) => {
+            updateEntries((current) =>
+              patchContentEntry(current, partId, {
                 ...patch,
                 loadingLabel: undefined,
               }),

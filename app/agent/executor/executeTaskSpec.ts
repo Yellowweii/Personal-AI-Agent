@@ -2,10 +2,10 @@ import {
   IMAGE_EDIT_PREFIX,
   IMAGE_TO_VIDEO_PREFIX,
   IMAGE_UNDERSTANDING_PREFIX,
-} from "@/constants/plan";
+  type TaskSpec,
+} from "@/agent/types/plan";
 import { VIDEO_GENERATING_PREFIX } from "@/constants/text2Video";
 import { IMAGE_GENERATING_PREFIX } from "@/constants/ui";
-import type { TaskSpec } from "@/agent/types/plan";
 import { imageToTextWithPrompt } from "@/agent/tools/imageToText";
 import { textToImageWithPrompt } from "@/agent/tools/textToImage";
 import { textToTextWithPrompt } from "@/agent/tools/textToText";
@@ -16,14 +16,14 @@ export interface ExecuteTaskSpecContext {
 }
 
 export interface ExecuteTaskSpecOptions {
-  slotId: string;
+  partId: string;
   signal: AbortSignal;
-  onSlotStart?: (loadingLabel: string) => void;
-  onSlotTextChunk?: (chunk: string) => void;
-  onSlotComplete?: (patch: {
+  onPartStart?: (loadingLabel: string) => void;
+  onPartTextChunk?: (chunk: string) => void;
+  onPartComplete?: (patch: {
     text?: string;
-    imageUrl?: string;
-    videoUrl?: string;
+    image_url?: string;
+    video_url?: string;
   }) => void;
 }
 
@@ -32,18 +32,18 @@ export const executeTaskSpec = async (
   ctx: ExecuteTaskSpecContext,
   options: ExecuteTaskSpecOptions,
 ): Promise<void> => {
-  const { signal, onSlotStart, onSlotTextChunk, onSlotComplete } = options;
+  const { signal, onPartStart, onPartTextChunk, onPartComplete } = options;
 
   switch (spec.tool) {
     case "image_understanding": {
       if (!ctx.imageUrl) return;
 
-      onSlotStart?.(IMAGE_UNDERSTANDING_PREFIX);
+      onPartStart?.(IMAGE_UNDERSTANDING_PREFIX);
       await imageToTextWithPrompt(
         ctx.imageUrl,
         spec.prompt,
         (chunk) => {
-          onSlotTextChunk?.(chunk);
+          onPartTextChunk?.(chunk);
         },
         () => {},
         signal,
@@ -55,7 +55,7 @@ export const executeTaskSpec = async (
       await textToTextWithPrompt(
         spec.prompt,
         (chunk) => {
-          onSlotTextChunk?.(chunk);
+          onPartTextChunk?.(chunk);
         },
         () => {},
         signal,
@@ -64,30 +64,30 @@ export const executeTaskSpec = async (
     }
 
     case "image_generate": {
-      onSlotStart?.(IMAGE_GENERATING_PREFIX);
+      onPartStart?.(IMAGE_GENERATING_PREFIX);
       const { imageUrl } = await textToImageWithPrompt(spec.prompt, signal);
-      onSlotComplete?.({ imageUrl });
+      onPartComplete?.({ image_url: imageUrl });
       return;
     }
 
     case "image_edit": {
-      onSlotStart?.(IMAGE_EDIT_PREFIX);
+      onPartStart?.(IMAGE_EDIT_PREFIX);
       const { imageUrl } = await textToImageWithPrompt(spec.prompt, signal);
-      onSlotComplete?.({ imageUrl });
+      onPartComplete?.({ image_url: imageUrl });
       return;
     }
 
     case "video_generate": {
-      onSlotStart?.(VIDEO_GENERATING_PREFIX);
+      onPartStart?.(VIDEO_GENERATING_PREFIX);
       const { videoUrl } = await textToVideoWithPrompt(spec.prompt, signal);
-      onSlotComplete?.({ videoUrl });
+      onPartComplete?.({ video_url: videoUrl });
       return;
     }
 
     case "image_to_video": {
-      onSlotStart?.(IMAGE_TO_VIDEO_PREFIX);
+      onPartStart?.(IMAGE_TO_VIDEO_PREFIX);
       const { videoUrl } = await textToVideoWithPrompt(spec.prompt, signal);
-      onSlotComplete?.({ videoUrl });
+      onPartComplete?.({ video_url: videoUrl });
       return;
     }
   }
