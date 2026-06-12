@@ -4,6 +4,7 @@ import { useState, useCallback, useRef } from "react";
 import type { Message } from "@/agent/types/message";
 import type { MessageContentPart } from "@/agent/types/message";
 import type { UseChatReturn } from "@/interfaces/chat";
+import { MemoryManager } from "@/agent/memory/memoryManager";
 import { runAgentPipeline } from "@/agent/planner/planner";
 import { CHAT_ERROR_MESSAGE } from "@/constants/ui";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
@@ -14,6 +15,7 @@ export const useChat = (): UseChatReturn => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const memoryManagerRef = useRef(new MemoryManager());
   const {
     feedText,
     flush,
@@ -30,6 +32,7 @@ export const useChat = (): UseChatReturn => {
 
   const clearMessages = useCallback(() => {
     stopTTS();
+    memoryManagerRef.current.clear();
     setMessages([]);
   }, [stopTTS]);
 
@@ -72,6 +75,7 @@ export const useChat = (): UseChatReturn => {
       try {
         await runAgentPipeline({
           messages: contextMessages,
+          memoryManager: memoryManagerRef.current,
           signal: controller.signal,
           onContentChange: applyContent,
           onTextChunk: feedText,

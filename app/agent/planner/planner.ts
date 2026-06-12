@@ -1,8 +1,9 @@
 import type { Message } from "@/agent/types/message";
 import type { MessageContentPart } from "@/agent/types/message";
+import type { MemoryManager } from "@/agent/memory/memoryManager";
 import { detectIntent } from "@/agent/planner/detectIntent";
 import { executeTaskSpec } from "@/agent/executor/executeTaskSpec";
-import { resolveTaskSpecs } from "@/agent/planner/resolveTaskSpecs";
+import { generateTaskSpecs } from "@/agent/planner/generateTaskSpecs";
 import {
   appendContentEntryText,
   createContentEntriesFromTaskSpecs,
@@ -11,8 +12,10 @@ import {
   patchContentEntry,
   type ContentPartEntry,
 } from "@/lib/messageContent";
+
 export interface RunAgentPipelineOptions {
   messages: Message[];
+  memoryManager: MemoryManager;
   signal: AbortSignal;
   onContentChange: (content: MessageContentPart[]) => void;
   onTextChunk?: (chunk: string) => void;
@@ -23,14 +26,35 @@ export interface RunAgentPipelineOptions {
 export const runAgentPipeline = async (
   options: RunAgentPipelineOptions,
 ): Promise<void> => {
-  const { messages, signal, onContentChange, onTextChunk, resetTTS, flushTTS } =
-    options;
+  const {
+    messages,
+    memoryManager,
+    signal,
+    onContentChange,
+    onTextChunk,
+    resetTTS,
+    flushTTS,
+  } = options;
 
-  const plan = await detectIntent(messages, signal);
-  const { taskSpecs } = await resolveTaskSpecs(messages, plan.steps, signal);
+  await memoryManager.syncMessages(messages, signal);
+
+  const intentContext = memoryManager.buildIntentContext();
+  const plan = await detectIntent(
+    intentContext,
+    memoryManager.latestUserHasImage(),
+    signal,
+  );
+
+  const taskSpecContext = memoryManager.buildTaskSpecContext();
+  const { taskSpecs } = await generateTaskSpecs(
+    taskSpecContext,
+    plan.steps,
+    signal,
+  );
 
   const userMsg = [...messages].reverse().find((m) => m.role === "user");
-  const imageUrl = userMsg ? getMessageImageUrl(userMsg) : undefined;
+  const currentUserImageUrl = userMsg ? getMessageImageUrl(userMsg) : undefined;
+  const imageUrl = memoryManager.resolveImageUrl(currentUserImageUrl);
 
   let entries = createContentEntriesFromTaskSpecs(taskSpecs);
   onContentChange(entriesToContent(entries));
@@ -56,9 +80,14 @@ export const runAgentPipeline = async (
         throw new DOMException("Aborted", "AbortError");
       }
 
+      const toolContext = memoryManager.buildToolContext(spec);
+
       await executeTaskSpec(
         spec,
-        { imageUrl },
+        {
+          imageUrl,
+          assets: toolContext.assets,
+        },
         {
           partId,
           signal,
@@ -74,6 +103,14 @@ export const runAgentPipeline = async (
             onTextChunk?.(chunk);
           },
           onPartComplete: (patch) => {
+            if (
+              spec.tool === "image_understanding" &&
+              imageUrl &&
+              patch.text?.trim()
+            ) {
+              memoryManager.updateAssetSummaryByUrl(imageUrl, patch.text.trim());
+            }
+
             updateEntries((current) =>
               patchContentEntry(current, partId, {
                 ...patch,

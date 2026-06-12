@@ -33,7 +33,7 @@ const partHasContentOrLoadingLabel = (part: MessageContentPart): boolean => {
 };
 
 const ImagePlaceholder = ({ label }: MediaPlaceholderProps) => (
-  <div
+ <div
     className="flex h-[200px] w-full max-w-full shrink-0 items-center justify-center rounded-xl bg-white/10 sm:w-[300px] sm:max-w-[300px]"
     aria-label={label ?? "图片生成中"}
   >

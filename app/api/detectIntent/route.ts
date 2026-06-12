@@ -1,29 +1,17 @@
 import { DETECT_INTENT_SYSTEM_PROMPT } from "@/constants/systemPrompts";
-import type { Message } from "@/agent/types/message";
-import {
-  getMessageText,
-  hasUserImage,
-  toLlmApiMessages,
-} from "@/lib/messageContent";
+import type { DetectIntentRequest } from "@/interfaces/detectIntent";
 import { normalizePlan } from "@/lib/normalizePlan";
 
 export const POST = async (req: Request) => {
   try {
-    const { messages } = (await req.json()) as { messages: Message[] };
+    const { context, hasUserImage } = (await req.json()) as DetectIntentRequest;
     const signal = req.signal;
 
-    const latestUser = [...messages].reverse().find((m) => m.role === "user");
-    if (
-      latestUser &&
-      hasUserImage(latestUser) &&
-      !getMessageText(latestUser).trim()
-    ) {
+    if (hasUserImage && !context.userMessage.trim()) {
       return Response.json({
         steps: [{ tool: "image_understanding", dependsOn: [] }],
       });
     }
-
-    const apiMessages = toLlmApiMessages(messages);
 
     const intentResponse = await fetch(
       `${process.env.LLM_API_BASE_URL}/v1/chat/completions`,
@@ -36,8 +24,11 @@ export const POST = async (req: Request) => {
         body: JSON.stringify({
           model: process.env.LLM_TEXT_MODEL,
           messages: [
-            { role: "system", content: DETECT_INTENT_SYSTEM_PROMPT },
-            ...apiMessages,
+            {
+              role: "system",
+              content: `${DETECT_INTENT_SYSTEM_PROMPT}\n\n${context.systemContext}`,
+            },
+            { role: "user", content: context.userMessage },
           ],
         }),
         signal,

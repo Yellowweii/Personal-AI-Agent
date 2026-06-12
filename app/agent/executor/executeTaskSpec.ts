@@ -4,6 +4,8 @@ import {
   IMAGE_UNDERSTANDING_PREFIX,
   type TaskSpec,
 } from "@/agent/types/plan";
+import type { Asset } from "@/agent/memory/types";
+import { resolveImageUrlForTool } from "@/agent/memory/context/buildToolContext";
 import { VIDEO_GENERATING_PREFIX } from "@/constants/text2Video";
 import { IMAGE_GENERATING_PREFIX } from "@/constants/ui";
 import { imageToTextWithPrompt } from "@/agent/tools/imageToText";
@@ -13,6 +15,7 @@ import { textToVideoWithPrompt } from "@/agent/tools/textToVideo";
 
 export interface ExecuteTaskSpecContext {
   imageUrl?: string;
+  assets?: Asset[];
 }
 
 export interface ExecuteTaskSpecOptions {
@@ -34,13 +37,18 @@ export const executeTaskSpec = async (
 ): Promise<void> => {
   const { signal, onPartStart, onPartTextChunk, onPartComplete } = options;
 
+  const resolvedImageUrl = resolveImageUrlForTool(
+    ctx.assets ?? [],
+    ctx.imageUrl,
+  );
+
   switch (spec.tool) {
     case "image_understanding": {
-      if (!ctx.imageUrl) return;
+      if (!resolvedImageUrl) return;
 
       onPartStart?.(IMAGE_UNDERSTANDING_PREFIX);
       await imageToTextWithPrompt(
-        ctx.imageUrl,
+        resolvedImageUrl,
         spec.prompt,
         (chunk) => {
           onPartTextChunk?.(chunk);

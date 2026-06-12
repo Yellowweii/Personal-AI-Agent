@@ -1,14 +1,15 @@
-import type { Message } from "@/agent/types/message";
+import type { BuiltContext } from "@/agent/memory/types";
 import type { PlanResponse } from "@/agent/types/plan";
 
 export const detectIntent = async (
-  messages: Message[],
+  context: BuiltContext,
+  hasUserImage: boolean,
   signal?: AbortSignal,
 ): Promise<PlanResponse> => {
   const response = await fetch("/api/detectIntent", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages }),
+    body: JSON.stringify({ context, hasUserImage }),
     signal,
   });
 

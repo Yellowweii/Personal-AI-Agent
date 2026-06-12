@@ -1,15 +1,15 @@
-import type { Message } from "@/agent/types/message";
+import type { BuiltContext } from "@/agent/memory/types";
 import type { TaskSpecPlan, ToolCall } from "@/agent/types/plan";
 
 export const generateTaskSpecs = async (
-  messages: Message[],
+  context: BuiltContext,
   steps: ToolCall[],
   signal?: AbortSignal,
 ): Promise<TaskSpecPlan> => {
   const response = await fetch("/api/generateTaskSpecs", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages, steps }),
+    body: JSON.stringify({ context, steps }),
     signal,
   });
 

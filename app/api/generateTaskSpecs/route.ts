@@ -1,21 +1,17 @@
 import { TASK_SPEC_GENERATION_SYSTEM_PROMPT } from "@/constants/systemPrompts";
 import type { GenerateTaskSpecsRequest } from "@/interfaces/generateTaskSpecs";
-import { getMessageText, toLlmApiMessages } from "@/lib/messageContent";
 import { normalizeTaskSpecs } from "@/lib/normalizeTaskSpecs";
 
 export const POST = async (req: Request) => {
   try {
-    const { messages, steps } = (await req.json()) as GenerateTaskSpecsRequest;
+    const { context, steps } = (await req.json()) as GenerateTaskSpecsRequest;
     const signal = req.signal;
 
     if (!Array.isArray(steps) || steps.length === 0) {
       return Response.json({ taskSpecs: [] });
     }
 
-    const latestUser = [...messages].reverse().find((m) => m.role === "user");
-    const fallbackPrompt = latestUser ? getMessageText(latestUser) : "";
-
-    const apiMessages = toLlmApiMessages(messages);
+    const fallbackPrompt = context.userMessage;
 
     const specResponse = await fetch(
       `${process.env.LLM_API_BASE_URL}/v1/chat/completions`,
@@ -28,8 +24,11 @@ export const POST = async (req: Request) => {
         body: JSON.stringify({
           model: process.env.LLM_TEXT_MODEL,
           messages: [
-            { role: "system", content: TASK_SPEC_GENERATION_SYSTEM_PROMPT },
-            ...apiMessages,
+            {
+              role: "system",
+              content: `${TASK_SPEC_GENERATION_SYSTEM_PROMPT}\n\n${context.systemContext}`,
+            },
+            { role: "user", content: context.userMessage },
             {
               role: "user",
               content: `Planner 工具列表：${JSON.stringify(steps)}`,

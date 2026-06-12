@@ -20,4 +20,6 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **constants/systemPrompts.ts**：所有 system prompt 一律集中在此文件，不论属于哪个功能模块（如意图识别、文生图、文生视频）。不要在其他 constants 文件或 API 路由内内联定义。
 - **svgs/**：所有 SVG 图标组件，按功能模块一文件（如 `chat.tsx`、`speechToText.tsx`）。页面内联 SVG 应提取到此目录。
 
-命名与现有文件保持一致：文件名与模块/能力对应。领域类型从 `@/agent/types/*` 导入；API / Hook 契约从 `@/interfaces/*`；常量从 `@/constants/*`；图标从 `@/svgs/*` 导入。
+- **agent/memory/**：Memory 与 Context Builder（如 `memoryManager.ts`、`buildIntentContext.ts`、`assetStore.ts`）。store / summary / retrieval / context 子目录同样按能力拆分。
+
+命名与现有文件保持一致：文件名与模块/能力对应，**一律使用 camelCase**（如 `memoryManager.ts`、`extractAssetsFromMessage.ts`），禁止使用 kebab-case（如 `memory-manager.ts`）。领域类型从 `@/agent/types/*` 导入；API / Hook 契约从 `@/interfaces/*`；常量从 `@/constants/*`；图标从 `@/svgs/*` 导入。
