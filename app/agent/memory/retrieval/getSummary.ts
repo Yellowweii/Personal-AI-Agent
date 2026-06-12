@@ -1,4 +1,4 @@
-import type { ConversationSummary } from "@/agent/memory/types";
+import type { ConversationSummary } from "@/agent/types/memory";
 
 export const getSummary = (
   conversationSummary: ConversationSummary | null,

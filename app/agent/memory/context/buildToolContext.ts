@@ -1,4 +1,4 @@
-import type { Asset, ToolContext } from "@/agent/memory/types";
+import type { Asset, ToolContext } from "@/agent/types/memory";
 import type { TaskSpec } from "@/agent/types/plan";
 
 export const buildToolContext = (

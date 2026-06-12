@@ -1,4 +1,4 @@
-import type { Asset } from "@/agent/memory/types";
+import type { Asset } from "@/agent/types/memory";
 import type { AssetStore } from "@/agent/memory/store/assetStore";
 
 export const getLastAssets = (assetStore: AssetStore): Asset[] =>

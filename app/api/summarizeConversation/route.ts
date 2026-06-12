@@ -3,7 +3,13 @@ import {
   INCREMENTAL_CONVERSATION_SUMMARY_SYSTEM_PROMPT,
 } from "@/constants/systemPrompts";
 import type { SummarizeConversationRequest } from "@/interfaces/summarizeConversation";
-import { formatMessagesForSummary } from "@/agent/memory/summary/formatMessagesForSummary";
+import { formatHistoryMessages } from "@/agent/memory/summary/formatHistoryMessages";
+import type { LlmApiMessage } from "@/lib/messageContent";
+
+type SummaryLlmMessage = {
+  role: "system" | "user" | "assistant";
+  content: LlmApiMessage["content"];
+};
 
 export const POST = async (req: Request) => {
   try {
@@ -15,12 +21,20 @@ export const POST = async (req: Request) => {
       return Response.json({ error: "缺少待摘要的消息" }, { status: 400 });
     }
 
-    const conversationText = formatMessagesForSummary(messages, assets ?? []);
     const isIncremental = Boolean(previousSummary?.trim());
+    const formattedHistoryMessages = formatHistoryMessages(
+      messages,
+      assets ?? [],
+    );
 
-    const userContent = isIncremental
-      ? `已有摘要：\n${previousSummary}\n\n新一轮对话：\n${conversationText}\n\n请合并为更新后的完整摘要。`
-      : `请摘要以下对话历史：\n\n${conversationText}`;
+    const systemContent = isIncremental
+      ? `${INCREMENTAL_CONVERSATION_SUMMARY_SYSTEM_PROMPT}\n\n# 已有摘要\n\n${previousSummary}`
+      : CONVERSATION_SUMMARY_SYSTEM_PROMPT;
+
+    const llmMessages: SummaryLlmMessage[] = [
+      { role: "system", content: systemContent },
+      ...formattedHistoryMessages,
+    ];
 
     const response = await fetch(
       `${process.env.LLM_API_BASE_URL}/v1/chat/completions`,
@@ -32,15 +46,7 @@ export const POST = async (req: Request) => {
         },
         body: JSON.stringify({
           model: process.env.LLM_TEXT_MODEL,
-          messages: [
-            {
-              role: "system",
-              content: isIncremental
-                ? INCREMENTAL_CONVERSATION_SUMMARY_SYSTEM_PROMPT
-                : CONVERSATION_SUMMARY_SYSTEM_PROMPT,
-            },
-            { role: "user", content: userContent },
-          ],
+          messages: llmMessages,
         }),
         signal,
       },
@@ -54,9 +60,8 @@ export const POST = async (req: Request) => {
     }
 
     const raw = (await response.json()).choices[0].message.content as string;
-    const summary = raw.trim();
 
-    return Response.json({ summary });
+    return Response.json(raw.trim());
   } catch (error) {
     console.error("summarizeConversation error:", error);
     return Response.json({ error: "服务器内部错误" }, { status: 500 });

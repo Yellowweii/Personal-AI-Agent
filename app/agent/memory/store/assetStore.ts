@@ -1,4 +1,4 @@
-import type { Asset } from "@/agent/memory/types";
+import type { Asset } from "@/agent/types/memory";
 
 export class AssetStore {
   private assets: Asset[] = [];
@@ -14,13 +14,6 @@ export class AssetStore {
     );
     if (!exists) {
       this.assets.push(asset);
-    }
-  }
-
-  updateSummary(assetId: string, summary: string): void {
-    const asset = this.assets.find((item) => item.id === assetId);
-    if (asset) {
-      asset.summary = summary;
     }
   }
 

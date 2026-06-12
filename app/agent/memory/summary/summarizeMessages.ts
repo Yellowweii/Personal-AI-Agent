@@ -1,6 +1,5 @@
-import type { Asset } from "@/agent/memory/types";
+import type { Asset } from "@/agent/types/memory";
 import type { Message } from "@/agent/types/message";
-import type { SummarizeConversationResponse } from "@/interfaces/summarizeConversation";
 
 export interface SummarizeMessagesOptions {
   messages: Message[];
@@ -25,6 +24,5 @@ export const summarizeMessages = async (
     throw new Error("对话摘要生成失败，请稍后重试");
   }
 
-  const { summary } = (await response.json()) as SummarizeConversationResponse;
-  return summary;
+  return (await response.json()) as string;
 };

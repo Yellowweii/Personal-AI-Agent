@@ -1,4 +1,4 @@
-import type { MemoryFact } from "@/agent/memory/types";
+import type { MemoryFact } from "@/agent/types/memory";
 
 export class MemoryStore {
   private memories: MemoryFact[] = [];

@@ -103,14 +103,6 @@ export const runAgentPipeline = async (
             onTextChunk?.(chunk);
           },
           onPartComplete: (patch) => {
-            if (
-              spec.tool === "image_understanding" &&
-              imageUrl &&
-              patch.text?.trim()
-            ) {
-              memoryManager.updateAssetSummaryByUrl(imageUrl, patch.text.trim());
-            }
-
             updateEntries((current) =>
               patchContentEntry(current, partId, {
                 ...patch,

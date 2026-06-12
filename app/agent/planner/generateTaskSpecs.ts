@@ -1,4 +1,4 @@
-import type { BuiltContext } from "@/agent/memory/types";
+import type { BuiltContext } from "@/agent/types/memory";
 import type { TaskSpecPlan, ToolCall } from "@/agent/types/plan";
 
 export const generateTaskSpecs = async (

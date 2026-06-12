@@ -1,21 +1,13 @@
 import type { Message } from "@/agent/types/message";
-import type { Asset, AssetType } from "@/agent/memory/types";
-import {
-  DEFAULT_IMAGE_ASSET_SUMMARY,
-  DEFAULT_VIDEO_ASSET_SUMMARY,
-} from "@/constants/memory";
+import type { Asset } from "@/agent/types/memory";
+import { summarizeImage } from "@/agent/memory/summary/summarizeImage";
+import { DEFAULT_VIDEO_ASSET_SUMMARY } from "@/constants/memory";
 import { getMessageText } from "@/lib/messageContent";
 
-const defaultSummaryForType = (type: AssetType): string => {
-  switch (type) {
-    case "image":
-      return DEFAULT_IMAGE_ASSET_SUMMARY;
-    case "video":
-      return DEFAULT_VIDEO_ASSET_SUMMARY;
-  }
-};
-
-export const extractAssetsFromMessage = (message: Message): Asset[] => {
+export const extractAssetsFromMessage = async (
+  message: Message,
+  signal?: AbortSignal,
+): Promise<Asset[]> => {
   const assets: Asset[] = [];
   const text = getMessageText(message).trim();
 
@@ -25,7 +17,7 @@ export const extractAssetsFromMessage = (message: Message): Asset[] => {
         id: crypto.randomUUID(),
         type: "image",
         url: part.image_url,
-        summary: text || defaultSummaryForType("image"),
+        summary: await summarizeImage(part.image_url, signal),
         sourceMessageId: message.id,
       });
     } else if (part.type === "video" && part.video_url) {
@@ -33,7 +25,7 @@ export const extractAssetsFromMessage = (message: Message): Asset[] => {
         id: crypto.randomUUID(),
         type: "video",
         url: part.video_url,
-        summary: text || defaultSummaryForType("video"),
+        summary: text || DEFAULT_VIDEO_ASSET_SUMMARY,
         sourceMessageId: message.id,
       });
     }
@@ -41,6 +33,3 @@ export const extractAssetsFromMessage = (message: Message): Asset[] => {
 
   return assets;
 };
-
-export const extractAssetsFromMessages = (messages: Message[]): Asset[] =>
-  messages.flatMap((message) => extractAssetsFromMessage(message));

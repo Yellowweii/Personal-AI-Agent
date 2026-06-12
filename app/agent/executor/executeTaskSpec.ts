@@ -4,7 +4,7 @@ import {
   IMAGE_UNDERSTANDING_PREFIX,
   type TaskSpec,
 } from "@/agent/types/plan";
-import type { Asset } from "@/agent/memory/types";
+import type { Asset } from "@/agent/types/memory";
 import { resolveImageUrlForTool } from "@/agent/memory/context/buildToolContext";
 import { VIDEO_GENERATING_PREFIX } from "@/constants/text2Video";
 import { IMAGE_GENERATING_PREFIX } from "@/constants/ui";

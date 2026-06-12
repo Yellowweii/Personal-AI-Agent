@@ -1,4 +1,4 @@
-import type { Asset, MemoryFact } from "@/agent/memory/types";
+import type { Asset, MemoryFact } from "@/agent/types/memory";
 import type { Message } from "@/agent/types/message";
 import { getMessageText } from "@/lib/messageContent";
 
@@ -61,7 +61,9 @@ export const formatMemoriesBlock = (memories: MemoryFact[]): string => {
     return "（无）";
   }
 
-  return memories.map((memory) => `- ${memory.key}: ${memory.value}`).join("\n");
+  return memories
+    .map((memory) => `- ${memory.key}: ${memory.value}`)
+    .join("\n");
 };
 
 export const formatContextBlock = (sections: {
@@ -80,10 +82,7 @@ export const formatContextBlock = (sections: {
   if (sections.recentMessages) {
     parts.push("Recent Messages:");
     parts.push(
-      formatRecentMessagesBlock(
-        sections.recentMessages,
-        sections.assets ?? [],
-      ),
+      formatRecentMessagesBlock(sections.recentMessages, sections.assets ?? []),
     );
     parts.push("");
   }

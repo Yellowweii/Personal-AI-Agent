@@ -1,4 +1,4 @@
-import type { BuiltContext, ContextPool } from "@/agent/memory/types";
+import type { BuiltContext, ContextPool } from "@/agent/types/memory";
 import { formatContextBlock } from "@/agent/memory/context/formatContextBlock";
 
 export const buildIntentContext = (pool: ContextPool): BuiltContext => ({

@@ -5,7 +5,7 @@ import type {
   ConversationSummary,
   MemoryFact,
   ToolContext,
-} from "@/agent/memory/types";
+} from "@/agent/types/memory";
 import type { Message } from "@/agent/types/message";
 import type { TaskSpec } from "@/agent/types/plan";
 import { buildIntentContext } from "@/agent/memory/context/buildIntentContext";
@@ -19,7 +19,7 @@ import { getMemories } from "@/agent/memory/retrieval/getMemories";
 import { getRecentMessages } from "@/agent/memory/retrieval/getRecentMessages";
 import { getSummary } from "@/agent/memory/retrieval/getSummary";
 import { summarizeMessages } from "@/agent/memory/summary/summarizeMessages";
-import { extractAssetsFromMessages } from "@/agent/memory/summary/extractAssetsFromMessage";
+import { extractAssetsFromMessage } from "@/agent/memory/summary/extractAssetsFromMessage";
 import { AssetStore } from "@/agent/memory/store/assetStore";
 import { ConversationStore } from "@/agent/memory/store/conversationStore";
 import { MemoryStore } from "@/agent/memory/store/memoryStore";
@@ -35,16 +35,14 @@ export class MemoryManager {
 
   private conversationSummary: ConversationSummary | null = null;
 
-  /** 已完成滚动压缩的批次数（每批 SUMMARY_BATCH_SIZE 条） */
   private summarizedBatchCount = 0;
+
+  private syncedMessageIds = new Set<string>();
 
   async syncMessages(messages: Message[], signal?: AbortSignal): Promise<void> {
     this.conversationStore.setMessages(messages);
 
-    const extractedAssets = extractAssetsFromMessages(messages);
-    for (const asset of extractedAssets) {
-      this.assetStore.addAsset(asset);
-    }
+    await this.syncNewAssets(messages, signal);
 
     const batchCount = Math.floor(messages.length / SUMMARY_BATCH_SIZE);
     const assets = this.assetStore.getAssets();
@@ -80,29 +78,35 @@ export class MemoryManager {
     this.summarizedBatchCount = batchCount;
   }
 
+  private async syncNewAssets(
+    messages: Message[],
+    signal?: AbortSignal,
+  ): Promise<void> {
+    for (const message of messages) {
+      if (this.syncedMessageIds.has(message.id)) {
+        continue;
+      }
+
+      const assets = await extractAssetsFromMessage(message, signal);
+      for (const asset of assets) {
+        this.assetStore.addAsset(asset);
+      }
+
+      this.syncedMessageIds.add(message.id);
+    }
+  }
+
   clear(): void {
     this.conversationStore.setMessages([]);
     this.assetStore = new AssetStore();
     this.memoryStore.setMemories([]);
     this.conversationSummary = null;
     this.summarizedBatchCount = 0;
+    this.syncedMessageIds.clear();
   }
 
   addMemory(fact: MemoryFact): void {
     this.memoryStore.addMemory(fact);
-  }
-
-  updateAssetSummary(assetId: string, summary: string): void {
-    this.assetStore.updateSummary(assetId, summary);
-  }
-
-  updateAssetSummaryByUrl(url: string, summary: string): void {
-    const asset = this.assetStore
-      .getAssets()
-      .find((item) => item.url === url);
-    if (asset) {
-      this.assetStore.updateSummary(asset.id, summary);
-    }
   }
 
   getAssets(): Asset[] {
