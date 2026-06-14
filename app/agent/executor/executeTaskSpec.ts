@@ -2,21 +2,15 @@ import {
   IMAGE_EDIT_PREFIX,
   IMAGE_TO_VIDEO_PREFIX,
   IMAGE_UNDERSTANDING_PREFIX,
-  type TaskSpec,
 } from "@/agent/types/plan";
-import type { Asset } from "@/agent/types/memory";
-import { resolveImageUrlForTool } from "@/agent/memory/context/buildToolContext";
+import type { ToolContext } from "@/agent/types/memory";
+import { resolveImageUrlForTool } from "@/agent/memory/contextSelection/selectToolContext";
 import { VIDEO_GENERATING_PREFIX } from "@/constants/text2Video";
 import { IMAGE_GENERATING_PREFIX } from "@/constants/ui";
 import { imageToTextWithPrompt } from "@/agent/tools/imageToText";
 import { textToImageWithPrompt } from "@/agent/tools/textToImage";
 import { textToTextWithPrompt } from "@/agent/tools/textToText";
 import { textToVideoWithPrompt } from "@/agent/tools/textToVideo";
-
-export interface ExecuteTaskSpecContext {
-  imageUrl?: string;
-  assets?: Asset[];
-}
 
 export interface ExecuteTaskSpecOptions {
   partId: string;
@@ -31,24 +25,20 @@ export interface ExecuteTaskSpecOptions {
 }
 
 export const executeTaskSpec = async (
-  spec: TaskSpec,
-  ctx: ExecuteTaskSpecContext,
+  toolContext: ToolContext,
   options: ExecuteTaskSpecOptions,
 ): Promise<void> => {
+  const { taskSpec: spec, assets, currentUserImageUrl } = toolContext;
   const { signal, onPartStart, onPartTextChunk, onPartComplete } = options;
-
-  const resolvedImageUrl = resolveImageUrlForTool(
-    ctx.assets ?? [],
-    ctx.imageUrl,
-  );
 
   switch (spec.tool) {
     case "image_understanding": {
-      if (!resolvedImageUrl) return;
+      const imageUrl = resolveImageUrlForTool(assets, currentUserImageUrl);
+      if (!imageUrl) return;
 
       onPartStart?.(IMAGE_UNDERSTANDING_PREFIX);
       await imageToTextWithPrompt(
-        resolvedImageUrl,
+        imageUrl,
         spec.prompt,
         (chunk) => {
           onPartTextChunk?.(chunk);

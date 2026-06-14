@@ -8,7 +8,6 @@ import {
   appendContentEntryText,
   createContentEntriesFromTaskSpecs,
   entriesToContent,
-  getMessageImageUrl,
   patchContentEntry,
   type ContentPartEntry,
 } from "@/lib/messageContent";
@@ -41,7 +40,10 @@ export const runAgentPipeline = async (
   const intentContext = memoryManager.buildIntentContext();
   const plan = await detectIntent(
     intentContext,
-    memoryManager.latestUserHasImage(),
+    {
+      hasUserImage: memoryManager.latestUserHasImage(),
+      hasUserText: memoryManager.latestUserHasText(),
+    },
     signal,
   );
 
@@ -49,12 +51,9 @@ export const runAgentPipeline = async (
   const { taskSpecs } = await generateTaskSpecs(
     taskSpecContext,
     plan.steps,
+    memoryManager.getLatestUserText(),
     signal,
   );
-
-  const userMsg = [...messages].reverse().find((m) => m.role === "user");
-  const currentUserImageUrl = userMsg ? getMessageImageUrl(userMsg) : undefined;
-  const imageUrl = memoryManager.resolveImageUrl(currentUserImageUrl);
 
   let entries = createContentEntriesFromTaskSpecs(taskSpecs);
   onContentChange(entriesToContent(entries));
@@ -82,36 +81,29 @@ export const runAgentPipeline = async (
 
       const toolContext = memoryManager.buildToolContext(spec);
 
-      await executeTaskSpec(
-        spec,
-        {
-          imageUrl,
-          assets: toolContext.assets,
+      await executeTaskSpec(toolContext, {
+        partId,
+        signal,
+        onPartStart: (loadingLabel) => {
+          updateEntries((current) =>
+            patchContentEntry(current, partId, { loadingLabel }),
+          );
         },
-        {
-          partId,
-          signal,
-          onPartStart: (loadingLabel) => {
-            updateEntries((current) =>
-              patchContentEntry(current, partId, { loadingLabel }),
-            );
-          },
-          onPartTextChunk: (chunk) => {
-            updateEntries((current) =>
-              appendContentEntryText(current, partId, chunk),
-            );
-            onTextChunk?.(chunk);
-          },
-          onPartComplete: (patch) => {
-            updateEntries((current) =>
-              patchContentEntry(current, partId, {
-                ...patch,
-                loadingLabel: undefined,
-              }),
-            );
-          },
+        onPartTextChunk: (chunk) => {
+          updateEntries((current) =>
+            appendContentEntryText(current, partId, chunk),
+          );
+          onTextChunk?.(chunk);
         },
-      );
+        onPartComplete: (patch) => {
+          updateEntries((current) =>
+            patchContentEntry(current, partId, {
+              ...patch,
+              loadingLabel: undefined,
+            }),
+          );
+        },
+      });
     }),
   );
 

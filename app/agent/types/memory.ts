@@ -1,5 +1,5 @@
-import type { Message } from "@/agent/types/message";
 import type { TaskSpec } from "@/agent/types/plan";
+import type { LlmApiMessage } from "@/lib/messageContent";
 
 export type AssetType = "image" | "video";
 
@@ -16,24 +16,30 @@ export interface MemoryFact {
   value: string;
 }
 
-export interface ConversationSummary {
-  summary: string;
+export type FormattedMessageContent =
+  | string
+  | { type: "text"; text: string }[];
+
+export interface ContextMessage {
+  role: "user" | "assistant";
+  content: FormattedMessageContent;
 }
 
 export interface ContextPool {
-  currentMessage: string;
-  recentMessages: Message[];
-  summary?: string;
-  memories?: MemoryFact[];
-  assets?: Asset[];
+  currentMessage: ContextMessage | null;
+  recentMessages: ContextMessage[];
+  summary: string;
+  longTermMemories: MemoryFact[];
+  assets: Asset[];
 }
 
 export interface BuiltContext {
   systemContext: string;
-  userMessage: string;
+  messages: LlmApiMessage[];
 }
 
 export interface ToolContext {
   taskSpec: TaskSpec;
   assets: Asset[];
+  currentUserImageUrl?: string;
 }

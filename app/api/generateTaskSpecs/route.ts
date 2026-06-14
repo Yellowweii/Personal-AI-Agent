@@ -4,14 +4,17 @@ import { normalizeTaskSpecs } from "@/lib/normalizeTaskSpecs";
 
 export const POST = async (req: Request) => {
   try {
-    const { context, steps } = (await req.json()) as GenerateTaskSpecsRequest;
+    const { context, steps, fallbackPrompt } =
+      (await req.json()) as GenerateTaskSpecsRequest;
     const signal = req.signal;
 
     if (!Array.isArray(steps) || steps.length === 0) {
       return Response.json({ taskSpecs: [] });
     }
 
-    const fallbackPrompt = context.userMessage;
+    const systemContent = context.systemContext
+      ? `${TASK_SPEC_GENERATION_SYSTEM_PROMPT}\n\n${context.systemContext}`
+      : TASK_SPEC_GENERATION_SYSTEM_PROMPT;
 
     const specResponse = await fetch(
       `${process.env.LLM_API_BASE_URL}/v1/chat/completions`,
@@ -24,11 +27,8 @@ export const POST = async (req: Request) => {
         body: JSON.stringify({
           model: process.env.LLM_TEXT_MODEL,
           messages: [
-            {
-              role: "system",
-              content: `${TASK_SPEC_GENERATION_SYSTEM_PROMPT}\n\n${context.systemContext}`,
-            },
-            { role: "user", content: context.userMessage },
+            { role: "system", content: systemContent },
+            ...context.messages,
             {
               role: "user",
               content: `Planner 工具列表：${JSON.stringify(steps)}`,

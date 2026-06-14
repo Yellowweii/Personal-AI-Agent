@@ -3,13 +3,13 @@ import type { PlanResponse } from "@/agent/types/plan";
 
 export const detectIntent = async (
   context: BuiltContext,
-  hasUserImage: boolean,
+  options: { hasUserImage: boolean; hasUserText: boolean },
   signal?: AbortSignal,
 ): Promise<PlanResponse> => {
   const response = await fetch("/api/detectIntent", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ context, hasUserImage }),
+    body: JSON.stringify({ context, ...options }),
     signal,
   });
 

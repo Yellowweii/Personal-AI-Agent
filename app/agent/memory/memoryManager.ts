@@ -1,30 +1,21 @@
-import type {
-  Asset,
-  BuiltContext,
-  ContextPool,
-  ConversationSummary,
-  MemoryFact,
-  ToolContext,
-} from "@/agent/types/memory";
+import type { BuiltContext, ContextPool, MemoryFact, ToolContext } from "@/agent/types/memory";
 import type { Message } from "@/agent/types/message";
 import type { TaskSpec } from "@/agent/types/plan";
-import { buildIntentContext } from "@/agent/memory/context/buildIntentContext";
-import { buildTaskSpecContext } from "@/agent/memory/context/buildTaskSpecContext";
-import {
-  buildToolContext,
-  resolveImageUrlForTool,
-} from "@/agent/memory/context/buildToolContext";
-import { getLastAssets } from "@/agent/memory/retrieval/getLastAssets";
-import { getMemories } from "@/agent/memory/retrieval/getMemories";
-import { getRecentMessages } from "@/agent/memory/retrieval/getRecentMessages";
-import { getSummary } from "@/agent/memory/retrieval/getSummary";
+import { buildContextPool } from "@/agent/memory/contextBuilder/buildContextPool";
+import { selectIntentContext } from "@/agent/memory/contextSelection/selectIntentContext";
+import { selectTaskSpecContext } from "@/agent/memory/contextSelection/selectTaskSpecContext";
+import { selectToolContext } from "@/agent/memory/contextSelection/selectToolContext";
 import { summarizeMessages } from "@/agent/memory/summary/summarizeMessages";
 import { extractAssetsFromMessage } from "@/agent/memory/summary/extractAssetsFromMessage";
 import { AssetStore } from "@/agent/memory/store/assetStore";
 import { ConversationStore } from "@/agent/memory/store/conversationStore";
 import { MemoryStore } from "@/agent/memory/store/memoryStore";
 import { SUMMARY_BATCH_SIZE } from "@/constants/memory";
-import { getMessageText, hasUserImage } from "@/lib/messageContent";
+import {
+  getMessageImageUrl,
+  getMessageText,
+  hasUserImage,
+} from "@/lib/messageContent";
 
 export class MemoryManager {
   private conversationStore = new ConversationStore();
@@ -33,7 +24,7 @@ export class MemoryManager {
 
   private memoryStore = new MemoryStore();
 
-  private conversationSummary: ConversationSummary | null = null;
+  private conversationSummary = "";
 
   private summarizedBatchCount = 0;
 
@@ -48,7 +39,7 @@ export class MemoryManager {
     const assets = this.assetStore.getAssets();
 
     if (batchCount === 0) {
-      this.conversationSummary = null;
+      this.conversationSummary = "";
       this.summarizedBatchCount = 0;
       return;
     }
@@ -67,12 +58,11 @@ export class MemoryManager {
       const summary = await summarizeMessages({
         messages: batchMessages,
         assets,
-        previousSummary:
-          batch > 1 ? this.conversationSummary?.summary : undefined,
+        previousSummary: batch > 1 ? this.conversationSummary : undefined,
         signal,
       });
 
-      this.conversationSummary = { summary };
+      this.conversationSummary = summary;
     }
 
     this.summarizedBatchCount = batchCount;
@@ -100,7 +90,7 @@ export class MemoryManager {
     this.conversationStore.setMessages([]);
     this.assetStore = new AssetStore();
     this.memoryStore.setMemories([]);
-    this.conversationSummary = null;
+    this.conversationSummary = "";
     this.summarizedBatchCount = 0;
     this.syncedMessageIds.clear();
   }
@@ -109,46 +99,56 @@ export class MemoryManager {
     this.memoryStore.addMemory(fact);
   }
 
-  getAssets(): Asset[] {
-    return this.assetStore.getAssets();
-  }
-
   buildContextPool(): ContextPool {
-    const messages = this.conversationStore.getMessages();
-    const latestUser = [...messages].reverse().find((m) => m.role === "user");
-    const summarizedCount = this.summarizedBatchCount * SUMMARY_BATCH_SIZE;
-
-    return {
-      currentMessage: latestUser ? getMessageText(latestUser) : "",
-      recentMessages: getRecentMessages(messages, summarizedCount),
-      summary: getSummary(this.conversationSummary),
-      memories: getMemories(this.memoryStore),
-      assets: getLastAssets(this.assetStore),
-    };
+    return buildContextPool({
+      messages: this.conversationStore.getMessages(),
+      summarizedBatchCount: this.summarizedBatchCount,
+      conversationSummary: this.conversationSummary,
+      longTermMemories: this.memoryStore.getMemories(),
+      assets: this.assetStore.getAssets(),
+    });
   }
 
   buildIntentContext(): BuiltContext {
-    return buildIntentContext(this.buildContextPool());
+    return selectIntentContext(this.buildContextPool());
   }
 
   buildTaskSpecContext(): BuiltContext {
-    return buildTaskSpecContext(this.buildContextPool());
+    return selectTaskSpecContext(this.buildContextPool());
   }
 
   buildToolContext(taskSpec: TaskSpec): ToolContext {
-    return buildToolContext(taskSpec, getLastAssets(this.assetStore));
-  }
-
-  resolveImageUrl(currentUserImageUrl?: string): string | undefined {
-    return resolveImageUrlForTool(
+    return selectToolContext(
+      taskSpec,
       this.assetStore.getAssets(),
-      currentUserImageUrl,
+      taskSpec.tool === "image_understanding"
+        ? this.getLatestUserImageUrl()
+        : undefined,
     );
   }
 
-  latestUserHasImage(): boolean {
+  private getLatestUserMessage(): Message | undefined {
     const messages = this.conversationStore.getMessages();
-    const latestUser = [...messages].reverse().find((m) => m.role === "user");
+    return [...messages].reverse().find((message) => message.role === "user");
+  }
+
+  latestUserHasText(): boolean {
+    const latestUser = this.getLatestUserMessage();
+    return Boolean(latestUser && getMessageText(latestUser).trim());
+  }
+
+  getLatestUserText(): string {
+    const latestUser = this.getLatestUserMessage();
+    return latestUser ? getMessageText(latestUser) : "";
+  }
+
+  getLatestUserImageUrl(): string | undefined {
+    const latestUser = this.getLatestUserMessage();
+    return latestUser ? getMessageImageUrl(latestUser) : undefined;
+  }
+
+  latestUserHasImage(): boolean {
+    const latestUser = this.getLatestUserMessage();
     return latestUser ? hasUserImage(latestUser) : false;
   }
 }

@@ -31,6 +31,7 @@ export const POST = async (req: Request) => {
             {
               role: "user",
               content: [
+                { type: "text", text: "描述图片" },
                 { type: "image_url", image_url: { url: imageUrl } },
               ],
             },

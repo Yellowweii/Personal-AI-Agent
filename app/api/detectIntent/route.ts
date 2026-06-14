@@ -4,14 +4,19 @@ import { normalizePlan } from "@/lib/normalizePlan";
 
 export const POST = async (req: Request) => {
   try {
-    const { context, hasUserImage } = (await req.json()) as DetectIntentRequest;
+    const { context, hasUserImage, hasUserText } =
+      (await req.json()) as DetectIntentRequest;
     const signal = req.signal;
 
-    if (hasUserImage && !context.userMessage.trim()) {
+    if (hasUserImage && !hasUserText) {
       return Response.json({
         steps: [{ tool: "image_understanding", dependsOn: [] }],
       });
     }
+
+    const systemContent = context.systemContext
+      ? `${DETECT_INTENT_SYSTEM_PROMPT}\n\n${context.systemContext}`
+      : DETECT_INTENT_SYSTEM_PROMPT;
 
     const intentResponse = await fetch(
       `${process.env.LLM_API_BASE_URL}/v1/chat/completions`,
@@ -24,11 +29,8 @@ export const POST = async (req: Request) => {
         body: JSON.stringify({
           model: process.env.LLM_TEXT_MODEL,
           messages: [
-            {
-              role: "system",
-              content: `${DETECT_INTENT_SYSTEM_PROMPT}\n\n${context.systemContext}`,
-            },
-            { role: "user", content: context.userMessage },
+            { role: "system", content: systemContent },
+            ...context.messages,
           ],
         }),
         signal,
