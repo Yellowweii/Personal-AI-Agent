@@ -34,27 +34,27 @@
 
 **可用工具**
 
-| 类别 | 工具 | 说明 |
-|------|------|------|
-| 图片类 | `image_generate` | 文生图 |
-| 图片类 | `image_edit` | 图生图 / 图片编辑（需用户上传图片） |
-| 视频类 | `video_generate` | 文生视频（异步轮询） |
-| 视频类 | `image_to_video` | 图生视频（需用户上传图片） |
-| 文字类 | `chat` | 文生文，流式回复 |
+| 类别   | 工具                  | 说明                                            |
+| ------ | --------------------- | ----------------------------------------------- |
+| 图片类 | `image_generate`      | 文生图                                          |
+| 图片类 | `image_edit`          | 图生图 / 图片编辑（需用户上传图片）             |
+| 视频类 | `video_generate`      | 文生视频（异步轮询）                            |
+| 视频类 | `image_to_video`      | 图生视频（需用户上传图片）                      |
+| 文字类 | `chat`                | 文生文，流式回复                                |
 | 文字类 | `image_understanding` | 图生文 / 图片理解（仅最新消息新上传图片时使用） |
 
 **步骤顺序**：UI 展示顺序固定为「图片类 → 视频类 → 文字类」，与用户在句子里先提到什么无关。
 
 **典型路由**
 
-| 用户意图 | 规划结果 |
-|----------|----------|
-| 纯文字问答 | `[chat]` |
-| 仅上传图片、无文字 | `[image_understanding]`（代码层短路，不走 LLM 规划） |
-| 画一张猫并写 100 字介绍 | `[image_generate, chat]` 并行 |
-| 把这张图改成油画风格 | `[image_edit, image_understanding]` 并行 |
-| 让这张图动起来 | `[image_to_video, image_understanding]` 并行 |
-| 寒暄 / 回顾历史 | `[chat]`，不重复规划已完成的生图 / 生视频 |
+| 用户意图                | 规划结果                                             |
+| ----------------------- | ---------------------------------------------------- |
+| 纯文字问答              | `[chat]`                                             |
+| 仅上传图片、无文字      | `[image_understanding]`（代码层短路，不走 LLM 规划） |
+| 画一张猫并写 100 字介绍 | `[image_generate, chat]` 并行                        |
+| 把这张图改成油画风格    | `[image_edit, image_understanding]` 并行             |
+| 让这张图动起来          | `[image_to_video, image_understanding]` 并行         |
+| 寒暄 / 回顾历史         | `[chat]`，不重复规划已完成的生图 / 生视频            |
 
 ### 流式 TTS 播报
 
@@ -130,25 +130,25 @@ cp .env.example .env.local
 
 按需填入以下配置：
 
-| 变量 | 说明 |
-|------|------|
-| `LLM_API_BASE_URL` | LLM API 地址（OpenAI 兼容 `/v1`） |
-| `LLM_API_KEY` | LLM API Key |
-| `LLM_TEXT_MODEL` | 文生文 / 意图识别模型 |
-| `LLM_IMAGE2TEXT_MODEL` | 图生文 / 视觉理解模型 |
-| `LLM_IMAGE_MODEL` | 文生图模型 |
-| `LLM_VIDEO_MODEL` | 文生视频模型，如 `agnes-video-v2.0` |
-| `STT_API_BASE_URL` | 语音转文字 API 地址 |
-| `STT_API_KEY` | STT API Key |
-| `LLM_STT_MODEL` / `DEFAULT_STT_MODEL` | STT 模型 |
-| `AZURE_SPEECH_KEY` | Azure Speech Key（TTS） |
-| `AZURE_SPEECH_REGION` | Azure 区域，如 `eastasia` |
-| `AZURE_TTS_VOICE` | 播报音色，如 `zh-CN-XiaoxiaoNeural` |
-| `QINIU_ACCESS_KEY` | 七牛云 Access Key（图片上传） |
-| `QINIU_SECRET_KEY` | 七牛云 Secret Key |
-| `QINIU_CDN_BASE_URL` | 七牛 CDN 域名 |
-| `QINIU_UPLOAD_HOST` | 七牛上传域名 |
-| `NEXT_PUBLIC_BASE_URL` | 站点 URL（元数据与 SEO，可选） |
+| 变量                                  | 说明                              |
+| ------------------------------------- | --------------------------------- |
+| `LLM_API_BASE_URL`                    | LLM API 地址（OpenAI 兼容 `/v1`） |
+| `LLM_API_KEY`                         | LLM API Key                       |
+| `LLM_TEXT_MODEL`                      | 文生文 / 意图识别模型             |
+| `LLM_IMAGE2TEXT_MODEL`                | 图生文 / 视觉理解模型             |
+| `LLM_IMAGE_MODEL`                     | 文生图模型                        |
+| `LLM_VIDEO_MODEL`                     | 文生视频模型                      |
+| `STT_API_BASE_URL`                    | 语音转文字 API 地址               |
+| `STT_API_KEY`                         | STT API Key                       |
+| `LLM_STT_MODEL` / `DEFAULT_STT_MODEL` | STT 模型                          |
+| `AZURE_SPEECH_KEY`                    | Azure Speech Key（TTS）           |
+| `AZURE_SPEECH_REGION`                 | Azure 区域                        |
+| `AZURE_TTS_VOICE`                     | 播报音色                          |
+| `QINIU_ACCESS_KEY`                    | 七牛云 Access Key（图片上传）     |
+| `QINIU_SECRET_KEY`                    | 七牛云 Secret Key                 |
+| `QINIU_CDN_BASE_URL`                  | 七牛 CDN 域名                     |
+| `QINIU_UPLOAD_HOST`                   | 七牛上传域名                      |
+| `NEXT_PUBLIC_BASE_URL`                | 站点 URL（元数据与 SEO，可选）    |
 
 ### 3. 启动开发服务器
 
@@ -167,12 +167,12 @@ pnpm start
 
 ## 常用命令
 
-| 命令 | 说明 |
-|------|------|
-| `pnpm dev` | 启动开发服务器 |
-| `pnpm build` | 生产构建 |
-| `pnpm start` | 启动生产服务 |
-| `pnpm lint` | 运行 ESLint |
+| 命令         | 说明           |
+| ------------ | -------------- |
+| `pnpm dev`   | 启动开发服务器 |
+| `pnpm build` | 生产构建       |
+| `pnpm start` | 启动生产服务   |
+| `pnpm lint`  | 运行 ESLint    |
 
 ## 开发说明
 
