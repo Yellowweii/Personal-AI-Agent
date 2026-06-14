@@ -1,8 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
 import type { Message } from "@/agent/types/message";
 import type { MessageContentPart } from "@/agent/types/message";
-import { LoadingDots } from "@/pages/Agent/components/LoadingIndicator";
-import { MessageTimestamp } from "@/pages/Agent/components/MessageTimestamp";
+import { LoadingDots } from "@/views/Agent/components/LoadingIndicator";
+import { MessageTimestamp } from "@/views/Agent/components/MessageTimestamp";
 import { AssistantAvatarIcon, UserAvatarIcon } from "@/svgs/chat";
 
 interface MessageBubbleProps {

@@ -5,11 +5,11 @@ import { useChat } from "@/hooks/useChat";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import { useSpeechToText } from "@/hooks/useSpeechToText";
 import { speechToText } from "@/agent/tools/speechToText";
-import { ChatHeader } from "@/pages/Agent/components/ChatHeader";
-import { EmptyState } from "@/pages/Agent/components/EmptyState";
-import { MessageBubble } from "@/pages/Agent/components/MessageBubble";
-import { LoadingIndicator } from "@/pages/Agent/components/LoadingIndicator";
-import { ChatInput } from "@/pages/Agent/components/ChatInput";
+import { ChatHeader } from "@/views/Agent/components/ChatHeader";
+import { EmptyState } from "@/views/Agent/components/EmptyState";
+import { MessageBubble } from "@/views/Agent/components/MessageBubble";
+import { LoadingIndicator } from "@/views/Agent/components/LoadingIndicator";
+import { ChatInput } from "@/views/Agent/components/ChatInput";
 
 export const Agent = () => {
   const {

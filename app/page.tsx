@@ -1,6 +1,6 @@
 "use client";
 
-import { Agent } from "@/pages/Agent/index";
+import { Agent } from "@/views/Agent/index";
 
 export default function Home() {
   return <Agent />;

@@ -43,19 +43,23 @@
 ## 项目结构
 
 ```
+agent/                    # Agent 核心（planner · executor · tools · memory）
 app/
 ├── api/                  # 后端 API 路由
 │   ├── detectIntent/     # 意图识别
 │   ├── text2Text/        # 文生文（流式）
 │   ├── text2Image/       # 文生图
 │   ├── text2Video/       # 文生视频（Agnes Video V2.0）
-│   ├── text2Speech/      # 文字转语音
+│   ├── text2Speech/       # 文字转语音
 │   └── speechToText/     # 语音转文字
-├── hooks/                # useChat · useTextToSpeech · useSpeechToText
-├── lib/                  # 前端 API 封装
-├── pages/Agent/          # Agent 主界面
-├── constants/            # 系统提示词、UI 文案
-└── public/               # 静态资源
+├── layout.tsx
+├── page.tsx
+└── globals.css
+hooks/                    # useChat · useTextToSpeech · useSpeechToText
+lib/                      # 前端 API 封装
+views/Agent/              # Agent 主界面
+constants/                # 系统提示词、UI 文案
+public/                   # 静态资源
 ```
 
 ## 快速开始
