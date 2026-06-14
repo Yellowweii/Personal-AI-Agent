@@ -28,6 +28,8 @@ export interface ContextMessage {
 export interface ContextPool {
   currentMessage: ContextMessage | null;
   recentMessages: ContextMessage[];
+  /** 全量格式化消息（含已 summary 的），供 intent 取最近 N 条 */
+  allMessages: ContextMessage[];
   summary: string;
   longTermMemories: MemoryFact[];
   assets: Asset[];

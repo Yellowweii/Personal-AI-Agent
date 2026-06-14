@@ -1,6 +1,7 @@
 import type { Asset, ContextPool, MemoryFact } from "@/agent/types/memory";
 import type { Message } from "@/agent/types/message";
 import { formatContextMessage } from "@/agent/memory/contextBuilder/formatContextMessage";
+import { getFormattedMessageText } from "@/agent/memory/shared/formatMessageWithAssets";
 import { SUMMARY_BATCH_SIZE } from "@/constants/memory";
 
 export interface BuildContextPoolInput {
@@ -33,6 +34,10 @@ export const buildContextPool = (input: BuildContextPoolInput): ContextPool => {
       ? messages.slice(summarizedCount, latestUserIndex)
       : messages.slice(summarizedCount);
 
+  const allMessages = messages
+    .map((message) => formatContextMessage(message, assets))
+    .filter((message) => getFormattedMessageText(message.content).trim());
+
   return {
     currentMessage: latestUser
       ? formatContextMessage(latestUser, assets)
@@ -40,6 +45,7 @@ export const buildContextPool = (input: BuildContextPoolInput): ContextPool => {
     recentMessages: recentRawMessages.map((message) =>
       formatContextMessage(message, assets),
     ),
+    allMessages,
     summary: conversationSummary,
     longTermMemories,
     assets,
