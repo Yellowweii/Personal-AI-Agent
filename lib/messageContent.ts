@@ -29,13 +29,11 @@ export const buildUserMessageContent = (
     return [{ type: "text", text }];
   }
 
-  const parts: MessageContentPart[] = [];
+  const parts: MessageContentPart[] = [{ type: "image", image_url: imageUrl }];
 
   if (text.trim()) {
     parts.push({ type: "text", text });
   }
-
-  parts.push({ type: "image", image_url: imageUrl });
 
   return parts;
 };

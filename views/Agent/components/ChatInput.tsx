@@ -110,42 +110,7 @@ export const ChatInput = ({
       }}
       className="relative"
     >
-      {pendingImagePreview && (
-        <div className="mb-2 flex items-start gap-2">
-          <div
-            className="relative h-16 w-16 rounded-lg overflow-hidden border border-white/10 bg-white/5"
-            aria-busy={isUploading}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={pendingImagePreview}
-              alt="待发送图片预览"
-              className={`h-full w-full object-cover ${isUploading ? "opacity-40" : ""}`}
-            />
-            {isUploading ? (
-              <div
-                className="absolute inset-0 flex items-center justify-center bg-black/55"
-                aria-live="polite"
-                aria-label={`图片上传 ${uploadProgress}%`}
-              >
-                <UploadProgressRing progress={uploadProgress} size={36} />
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={onImageRemove}
-                disabled={inputDisabled || isUploading}
-                className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white/80 hover:bg-black/80 disabled:opacity-50"
-                aria-label="移除图片"
-              >
-                <RemoveImageIcon />
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      <div className="relative flex items-end gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-xl focus-within:border-white/20 transition-colors">
+      <div className="relative flex flex-col gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 transition-colors focus-within:border-white/20">
         <input
           ref={fileInputRef}
           type="file"
@@ -153,69 +118,106 @@ export const ChatInput = ({
           className="hidden"
           onChange={handleFileChange}
         />
-        {!pendingImagePreview && (
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={inputDisabled || isUploading}
-            className={`${iconBtn} shrink-0 bg-white/5 text-white/60 hover:bg-white/10 hover:text-white disabled:opacity-30`}
-            aria-label="添加图片"
-          >
-            <PlusIcon />
-          </button>
+
+        {pendingImagePreview && (
+          <div className="w-fit max-w-full" aria-busy={isUploading}>
+            <div className="relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={pendingImagePreview}
+                alt="待发送图片预览"
+                className={`block h-16 w-auto max-w-full rounded-lg object-contain ${
+                  isUploading ? "opacity-40" : ""
+                }`}
+              />
+              {isUploading ? (
+                <div
+                  className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/55"
+                  aria-live="polite"
+                  aria-label={`图片上传 ${uploadProgress}%`}
+                >
+                  <UploadProgressRing progress={uploadProgress} size={36} />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onImageRemove}
+                  disabled={inputDisabled || isUploading}
+                  className="absolute top-1 right-1 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white/80 hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="移除图片"
+                >
+                  <RemoveImageIcon />
+                </button>
+              )}
+            </div>
+          </div>
         )}
-        <textarea
-          ref={textareaRef}
-          value={value}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          disabled={inputDisabled}
-          rows={1}
-          className="flex-1 bg-transparent text-sm text-white placeholder-white/30 resize-none outline-none max-h-40 py-1 leading-relaxed disabled:opacity-50"
-          style={{ minHeight: "20px" }}
-        />
-        <div className="flex items-center gap-2 flex-none">
-          {isVoiceSupported &&
-            !isLoading &&
-            (isTranscribing ? (
-              <div className={iconBtn} aria-label="正在识别语音">
-                <TranscribingSpinnerIcon />
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={isRecording ? onStopVoice : onStartVoice}
-                className={
-                  isRecording
-                    ? `${iconBtn} bg-red-500/20 text-red-400 hover:bg-red-500/30 animate-pulse`
-                    : `${iconBtn} bg-white/5 text-white/60 hover:bg-white/10 hover:text-white`
-                }
-                title={isRecording ? "停止录音" : "语音输入"}
-                aria-label={isRecording ? "停止录音" : "开始语音输入"}
-              >
-                {isRecording ? <StopRecordingIcon /> : <MicrophoneIcon />}
-              </button>
-            ))}
-          {isLoading && (
+
+        <div className="flex items-end gap-2">
+          {!pendingImagePreview && (
             <button
               type="button"
-              onClick={onStop}
-              className={`${iconBtn} bg-red-500/20 text-red-400 hover:bg-red-500/30`}
-              title="停止生成"
-              aria-label="停止生成"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={inputDisabled || isUploading}
+              className={`${iconBtn} shrink-0 bg-white/5 text-white/60 hover:bg-white/10 hover:text-white disabled:opacity-30`}
+              aria-label="添加图片"
             >
-              <StopRecordingIcon />
+              <PlusIcon />
             </button>
           )}
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            className={`${iconBtn} bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-30`}
-            aria-label="提交任务"
-          >
-            <SendIcon />
-          </button>
+          <textarea
+            ref={textareaRef}
+            value={value}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            disabled={inputDisabled}
+            rows={1}
+            className="flex-1 resize-none bg-transparent py-1 text-sm leading-relaxed text-white outline-none placeholder:text-white/30 max-h-40 disabled:opacity-50"
+            style={{ minHeight: "20px" }}
+          />
+          <div className="flex flex-none items-center gap-2">
+            {isVoiceSupported &&
+              !isLoading &&
+              (isTranscribing ? (
+                <div className={iconBtn} aria-label="正在识别语音">
+                  <TranscribingSpinnerIcon />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={isRecording ? onStopVoice : onStartVoice}
+                  className={
+                    isRecording
+                      ? `${iconBtn} bg-red-500/20 text-red-400 hover:bg-red-500/30 animate-pulse`
+                      : `${iconBtn} bg-white/5 text-white/60 hover:bg-white/10 hover:text-white`
+                  }
+                  title={isRecording ? "停止录音" : "语音输入"}
+                  aria-label={isRecording ? "停止录音" : "开始语音输入"}
+                >
+                  {isRecording ? <StopRecordingIcon /> : <MicrophoneIcon />}
+                </button>
+              ))}
+            {isLoading && (
+              <button
+                type="button"
+                onClick={onStop}
+                className={`${iconBtn} bg-red-500/20 text-red-400 hover:bg-red-500/30`}
+                title="停止生成"
+                aria-label="停止生成"
+              >
+                <StopRecordingIcon />
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={!canSubmit}
+              className={`${iconBtn} bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-30`}
+              aria-label="提交任务"
+            >
+              <SendIcon />
+            </button>
+          </div>
         </div>
       </div>
       {(voiceError || uploadError) && (

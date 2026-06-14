@@ -25,23 +25,31 @@ dependsOn 为预留字段，当前一律返回空数组 []。
 
 【可用工具】
 图片类：
-- image_generate：文生图，根据文字描述生成全新图片
-- image_edit：图生图/图片编辑，基于用户上传的图片进行修改、重绘、风格化
+- image_generate：文生图，仅当**无上传图片**时根据文字描述生成全新图片
+- image_edit：图生图/图片编辑，基于用户上传的图片进行修改、重绘、风格化、生成类似图
 视频类：
 - video_generate：文生视频，根据文字描述生成视频
 - image_to_video：图生视频，基于用户上传的图片生成动态视频
 文字类：
 - chat：文生文，文字回答、解释、翻译、总结、代码、问答
-- image_understanding：图片理解；仅当**最新一条**用户消息新上传了图片且需要识图时使用（输出为文字，仍归入文字类，排在 steps 最后段）
+- image_understanding：图片理解/识图；仅当用户**明确要求描述、识别、解读图片内容**时使用（如「这是什么」「描述一下这张图」）；用户已给出明确编辑/生成/视频指令时，禁止附带 image_understanding
+
+【图片/视频处理路由（返回前必须自检）】
+- 用户**上传了图片**并提出任何基于该图的图片处理需求（生成类似图、参考创作、改颜色、换风格、去背景、局部重绘等）→ image_edit + chat，禁止 image_generate / image_understanding
+- 用户**未上传图片**，仅文字描述生图需求 → image_generate + chat（若同时需要文字说明）
+- 用户上传图片并提出明确图生视频需求（让图动起来、做成视频等）→ image_to_video + chat，禁止 image_understanding
+- chat 用于简短确认任务已完成、说明改动或生成要点，不要复述整张图片内容
 
 【示例】
 「画一张猫的图片并写100字介绍」→ {"steps":[{"tool":"image_generate","dependsOn":[]},{"tool":"chat","dependsOn":[]}]}
 
 错误示例（禁止）：{"steps":[{"tool":"chat","dependsOn":[]},{"tool":"image_generate","dependsOn":[]}]}
 
-「根据这张图生成类似图片」→ {"steps":[{"tool":"image_generate","dependsOn":[]},{"tool":"image_understanding","dependsOn":[]}]}
-「把这张图改成油画风格」→ {"steps":[{"tool":"image_edit","dependsOn":[]},{"tool":"image_understanding","dependsOn":[]}]}
-「让这张图动起来」→ {"steps":[{"tool":"image_to_video","dependsOn":[]},{"tool":"image_understanding","dependsOn":[]}]}
+「根据这张图生成类似图片」→ {"steps":[{"tool":"image_edit","dependsOn":[]},{"tool":"chat","dependsOn":[]}]}
+「把这张图改成油画风格」→ {"steps":[{"tool":"image_edit","dependsOn":[]},{"tool":"chat","dependsOn":[]}]}
+「把这个图片小男孩的衣服换个颜色」→ {"steps":[{"tool":"image_edit","dependsOn":[]},{"tool":"chat","dependsOn":[]}]}
+「让这张图动起来」→ {"steps":[{"tool":"image_to_video","dependsOn":[]},{"tool":"chat","dependsOn":[]}]}
+「描述一下这张图」→ {"steps":[{"tool":"image_understanding","dependsOn":[]}]}
 仅发图无文字 → {"steps":[{"tool":"image_understanding","dependsOn":[]}]}，禁止 chat
 纯文字问答 → {"steps":[{"tool":"chat","dependsOn":[]}]}
 历史已识图后的纯文字追问（如「我刚才干了什么」「总结一下」）→ {"steps":[{"tool":"chat","dependsOn":[]}]}，禁止 image_understanding
@@ -58,7 +66,7 @@ export const TASK_SPEC_GENERATION_SYSTEM_PROMPT = `你是 Task Spec 生成器。
 - 每条 taskSpec 的 prompt 默认使用中文；仅当用户明确要求英文或其他语言时，才使用对应语言
 - 每条 prompt 只服务对应工具，自包含，不得写「同上」「见用户原文」等引用
 - 不得直接复制用户原文；应改写为面向该工具的专业指令（含必要细节、风格、长度、镜头语言等）
-- chat：写明文字任务目标、语气、长度与格式；若用户同时要媒体，chat 的 prompt 只覆盖文字部分，不要提生图/生视频；须将回答所需的多轮对话上下文（如用户此前提供的信息、助手此前的结论）写入 prompt，因为执行阶段不会再收到历史消息
+- chat：写明文字任务目标、语气、长度与格式；若用户同时要媒体，chat 的 prompt 只覆盖文字部分，不要提生图/生视频；与 image_generate / image_edit / image_to_video 并行时，chat 只写简短确认与改动说明（1-3 句），禁止复述整张图片；须将回答所需的多轮对话上下文（如用户此前提供的信息、助手此前的结论）写入 prompt，因为执行阶段不会再收到历史消息
 - image_understanding：写明要识别的主体、场景、风格、文字、情绪及后续用途；用户仅发图无文字时，prompt 为「详细描述图片内容，包括主体、场景、颜色、氛围」
 - image_generate / image_edit：写明画面主体、构图、风格、光线、细节，可直接作为生图模型 prompt
 - video_generate / image_to_video：写明主体动作、场景、镜头运动、节奏、风格；需要时长时在 prompt 中明确秒数

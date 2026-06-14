@@ -38,6 +38,6 @@ export const IMAGE_ONLY_DEFAULT_PROMPT = "请描述这张图片的内容。";
 
 export const IMAGE_UNDERSTANDING_PREFIX = "正在理解图片...";
 
-export const IMAGE_EDIT_PREFIX = "正在编辑图片...";
+export const IMAGE_EDIT_PREFIX = "正在根据原图生成图片...";
 
 export const IMAGE_TO_VIDEO_PREFIX = "正在将图片转为视频...";

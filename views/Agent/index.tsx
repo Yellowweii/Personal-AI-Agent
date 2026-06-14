@@ -102,7 +102,7 @@ export const Agent = () => {
       />
 
       <main className="flex-1 overflow-y-auto py-4 sm:py-6">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 space-y-4 sm:space-y-6">
+        <div className="mx-auto max-w-[850px] px-4 sm:px-6 space-y-4 sm:space-y-6">
           {messages.length === 0 && <EmptyState />}
 
           {messages.map((message, index) => (
@@ -127,7 +127,7 @@ export const Agent = () => {
       </main>
 
       <footer className="flex-none pb-3 pt-2 sm:pb-6 safe-area-bottom">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6">
+        <div className="mx-auto max-w-[850px] px-4 sm:px-6">
           <ChatInput
             value={input}
             onChange={setInput}

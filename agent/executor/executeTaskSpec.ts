@@ -7,7 +7,9 @@ import type { ToolContext } from "@/agent/types/memory";
 import { resolveImageUrlForTool } from "@/agent/memory/contextSelection/selectToolContext";
 import { VIDEO_GENERATING_PREFIX } from "@/constants/text2Video";
 import { IMAGE_GENERATING_PREFIX } from "@/constants/ui";
+import { imageToImageWithPrompt } from "@/agent/tools/imageToImage";
 import { imageToTextWithPrompt } from "@/agent/tools/imageToText";
+import { imageToVideoWithPrompt } from "@/agent/tools/imageToVideo";
 import { textToImageWithPrompt } from "@/agent/tools/textToImage";
 import { textToTextWithPrompt } from "@/agent/tools/textToText";
 import { textToVideoWithPrompt } from "@/agent/tools/textToVideo";
@@ -69,9 +71,16 @@ export const executeTaskSpec = async (
     }
 
     case "image_edit": {
+      const imageUrl = resolveImageUrlForTool(assets, currentUserImageUrl);
+      if (!imageUrl) return;
+
       onPartStart?.(IMAGE_EDIT_PREFIX);
-      const { imageUrl } = await textToImageWithPrompt(spec.prompt, signal);
-      onPartComplete?.({ image_url: imageUrl });
+      const { imageUrl: editedImageUrl } = await imageToImageWithPrompt(
+        imageUrl,
+        spec.prompt,
+        signal,
+      );
+      onPartComplete?.({ image_url: editedImageUrl });
       return;
     }
 
@@ -83,8 +92,15 @@ export const executeTaskSpec = async (
     }
 
     case "image_to_video": {
+      const imageUrl = resolveImageUrlForTool(assets, currentUserImageUrl);
+      if (!imageUrl) return;
+
       onPartStart?.(IMAGE_TO_VIDEO_PREFIX);
-      const { videoUrl } = await textToVideoWithPrompt(spec.prompt, signal);
+      const { videoUrl } = await imageToVideoWithPrompt(
+        imageUrl,
+        spec.prompt,
+        signal,
+      );
       onPartComplete?.({ video_url: videoUrl });
       return;
     }

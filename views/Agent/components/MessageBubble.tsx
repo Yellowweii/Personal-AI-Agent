@@ -3,7 +3,6 @@ import type { Message } from "@/agent/types/message";
 import type { MessageContentPart } from "@/agent/types/message";
 import { LoadingDots } from "@/views/Agent/components/LoadingIndicator";
 import { MessageTimestamp } from "@/views/Agent/components/MessageTimestamp";
-import { AssistantAvatarIcon, UserAvatarIcon } from "@/svgs/chat";
 
 interface MessageBubbleProps {
   message: Message;
@@ -67,15 +66,11 @@ const ContentPartView = ({ part, bottomRef, isUser }: ContentPartViewProps) => {
     case "image":
       if (part.image_url) {
         return (
-          <div className="overflow-hidden rounded-xl">
+          <div className="w-fit max-w-full">
             <img
               src={part.image_url}
               alt={isUser ? "用户上传" : "AI 生成"}
-              className={
-                isUser
-                  ? "max-h-[240px] max-w-full w-auto object-cover sm:max-w-[280px]"
-                  : "max-h-[300px] w-auto max-w-full object-cover sm:max-w-[300px]"
-              }
+              className="block h-[200px] w-auto max-w-none rounded-xl"
               onLoad={() =>
                 bottomRef.current?.scrollIntoView({ behavior: "smooth" })
               }
@@ -106,6 +101,19 @@ const ContentPartView = ({ part, bottomRef, isUser }: ContentPartViewProps) => {
   }
 };
 
+const isTextBubblePart = (part: MessageContentPart): boolean =>
+  part.type === "text" && Boolean(part.text || part.loadingLabel);
+
+const isMediaPart = (part: MessageContentPart): boolean => {
+  if (part.type === "image") {
+    return Boolean(part.image_url || part.loadingLabel);
+  }
+  if (part.type === "video") {
+    return Boolean(part.video_url || part.loadingLabel);
+  }
+  return false;
+};
+
 export const MessageBubble = ({
   message,
   bottomRef,
@@ -118,43 +126,53 @@ export const MessageBubble = ({
   const showSharedLoadingDots =
     !isUser && isGenerating && !hasContentOrLoadingLabel;
 
+  const textBubbleClass = isUser
+    ? "inline-flex max-w-full flex-col gap-2 rounded-2xl rounded-tr-sm bg-blue-500 px-4 py-3 text-left text-sm leading-relaxed whitespace-pre-wrap wrap-break-word text-white"
+    : "inline-flex max-w-full flex-col gap-2 rounded-2xl rounded-tl-sm bg-white/5 px-4 py-3 text-left text-sm leading-relaxed whitespace-pre-wrap wrap-break-word text-white/90";
+
   return (
-    <div className={`flex gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
+    <div
+      className={`max-w-[92%] sm:max-w-[88%] ${isUser ? "ml-auto text-right" : ""}`}
+    >
       <div
-        className={`flex-none w-8 h-8 rounded-lg flex items-center justify-center text-xs font-semibold shrink-0 ${
-          isUser
-            ? "bg-blue-500 text-white"
-            : "bg-linear-to-br from-purple-500 to-pink-500 text-white"
-        }`}
+        className={`flex max-w-full flex-col gap-3 ${isUser ? "items-end" : "items-start"}`}
       >
-        {isUser ? <UserAvatarIcon /> : <AssistantAvatarIcon />}
+        {message.content.map((part, index) => {
+          if (isMediaPart(part)) {
+            return (
+              <ContentPartView
+                key={`${part.type}-${index}`}
+                part={part}
+                bottomRef={bottomRef}
+                isUser={isUser}
+              />
+            );
+          }
+
+          if (isTextBubblePart(part)) {
+            return (
+              <div key={`${part.type}-${index}`} className={textBubbleClass}>
+                <ContentPartView
+                  part={part}
+                  bottomRef={bottomRef}
+                  isUser={isUser}
+                />
+              </div>
+            );
+          }
+
+          return null;
+        })}
+        {showSharedLoadingDots && (
+          <div className={textBubbleClass}>
+            <LoadingDots />
+          </div>
+        )}
       </div>
 
-      <div
-        className={`flex-1 max-w-[85%] sm:max-w-[75%] ${isUser ? "text-right" : ""}`}
-      >
-        <div
-          className={`inline-flex max-w-full flex-col gap-3 rounded-2xl px-4 py-3 text-left text-sm leading-relaxed whitespace-pre-wrap wrap-break-word ${
-            isUser
-              ? "gap-2 rounded-tr-sm bg-blue-500 text-white"
-              : "rounded-tl-sm bg-white/5 text-white/90"
-          }`}
-        >
-          {message.content.map((part, index) => (
-            <ContentPartView
-              key={`${part.type}-${index}`}
-              part={part}
-              bottomRef={bottomRef}
-              isUser={isUser}
-            />
-          ))}
-          {showSharedLoadingDots && <LoadingDots />}
-        </div>
-
-        <div className="mt-1 text-[10px] text-white/30">
-          {isUser ? "你" : "Agent"}
-          <MessageTimestamp timestamp={message.timestamp} />
-        </div>
+      <div className="mt-1 text-[10px] text-white/30">
+        {isUser ? "你" : "Agent"}
+        <MessageTimestamp timestamp={message.timestamp} />
       </div>
     </div>
   );

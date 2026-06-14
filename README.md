@@ -36,12 +36,12 @@
 
 | 类别   | 工具                  | 说明                                            |
 | ------ | --------------------- | ----------------------------------------------- |
-| 图片类 | `image_generate`      | 文生图                                          |
-| 图片类 | `image_edit`          | 图生图 / 图片编辑（需用户上传图片）             |
+| 图片类 | `image_generate`      | 文生图（无上传图片时）                          |
+| 图片类 | `image_edit`          | 图生图 / 图片编辑（需用户上传图片，含生成类似图） |
 | 视频类 | `video_generate`      | 文生视频（异步轮询）                            |
 | 视频类 | `image_to_video`      | 图生视频（需用户上传图片）                      |
 | 文字类 | `chat`                | 文生文，流式回复                                |
-| 文字类 | `image_understanding` | 图生文 / 图片理解（仅最新消息新上传图片时使用） |
+| 文字类 | `image_understanding` | 图生文 / 图片理解（用户明确要求识图、描述图片时使用） |
 
 **步骤顺序**：UI 展示顺序固定为「图片类 → 视频类 → 文字类」，与用户在句子里先提到什么无关。
 
@@ -52,8 +52,10 @@
 | 纯文字问答              | `[chat]`                                             |
 | 仅上传图片、无文字      | `[image_understanding]`（代码层短路，不走 LLM 规划） |
 | 画一张猫并写 100 字介绍 | `[image_generate, chat]` 并行                        |
-| 把这张图改成油画风格    | `[image_edit, image_understanding]` 并行             |
-| 让这张图动起来          | `[image_to_video, image_understanding]` 并行         |
+| 根据这张图生成类似图片  | `[image_edit, chat]` 并行                          |
+| 把这张图改成油画风格    | `[image_edit, chat]` 并行                            |
+| 描述一下这张图          | `[image_understanding]`                              |
+| 让这张图动起来          | `[image_to_video, chat]` 并行                        |
 | 寒暄 / 回顾历史         | `[chat]`，不重复规划已完成的生图 / 生视频            |
 
 ### 流式 TTS 播报
@@ -96,6 +98,7 @@ app/
 │   ├── text2Text/            # 文生文（流式）
 │   ├── text2Image/           # 文生图
 │   ├── text2Video/           # 文生视频
+│   ├── image2Video/          # 图生视频
 │   ├── text2Speech/          # 文字转语音
 │   ├── speech2Text/          # 语音转文字
 │   ├── image2Text/           # 图生文
@@ -136,8 +139,10 @@ cp .env.example .env.local
 | `LLM_API_KEY`                         | LLM API Key                       |
 | `LLM_TEXT_MODEL`                      | 文生文 / 意图识别模型             |
 | `LLM_IMAGE2TEXT_MODEL`                | 图生文 / 视觉理解模型             |
-| `LLM_IMAGE_MODEL`                     | 文生图模型                        |
-| `LLM_VIDEO_MODEL`                     | 文生视频模型                      |
+| `LLM_TEXT2IMAGE_MODEL`                | 文生图模型                        |
+| `LLM_IMAGE2IMAGE_MODEL`               | 图生图 / 图片编辑模型             |
+| `LLM_TEXT2VIDEO_MODEL`                | 文生视频模型                      |
+| `LLM_IMAGE2VIDEO_MODEL`               | 图生视频模型                      |
 | `STT_API_BASE_URL`                    | 语音转文字 API 地址               |
 | `STT_API_KEY`                         | STT API Key                       |
 | `LLM_STT_MODEL` / `DEFAULT_STT_MODEL` | STT 模型                          |

@@ -17,7 +17,8 @@ export const POST = async (req: Request) => {
           Authorization: `Bearer ${process.env.LLM_API_KEY}`,
         },
         body: JSON.stringify({
-          model: process.env.LLM_IMAGE_MODEL,
+          model:
+            process.env.LLM_TEXT2IMAGE_MODEL ?? process.env.LLM_IMAGE_MODEL,
           prompt: imagePrompt,
         }),
         signal,
