@@ -16,11 +16,13 @@ export const Agent = () => {
     messages,
     input,
     isLoading,
+    isTtsEnabled,
     setInput,
     handleSend,
     handleStop,
     stopSpeech,
     clearMessages,
+    toggleTtsEnabled,
   } = useChat();
 
   const {
@@ -93,7 +95,11 @@ export const Agent = () => {
 
   return (
     <div className="flex flex-col h-dvh bg-[#0a0a0a] text-white safe-area-inset">
-      <ChatHeader onClear={clearMessages} />
+      <ChatHeader
+        onClear={clearMessages}
+        isTtsEnabled={isTtsEnabled}
+        onToggleTts={toggleTtsEnabled}
+      />
 
       <main className="flex-1 overflow-y-auto py-4 sm:py-6">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 space-y-4 sm:space-y-6">

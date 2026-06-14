@@ -1,25 +1,38 @@
+"use client";
+
+import { toast } from "sonner";
+import { TTS_TOGGLE } from "@/constants/textToSpeech";
+import {
+  AgentLogoIcon,
+  ClearSessionIcon,
+  TTS_TOGGLE_OFF_ICON,
+  TTS_TOGGLE_ON_ICON,
+} from "@/svgs/chatHeader";
+
 interface ChatHeaderProps {
   onClear: () => void;
+  isTtsEnabled: boolean;
+  onToggleTts: () => void;
 }
 
-export const ChatHeader = ({ onClear }: ChatHeaderProps) => {
+export const ChatHeader = ({
+  onClear,
+  isTtsEnabled,
+  onToggleTts,
+}: ChatHeaderProps) => {
+  const handleToggleTts = () => {
+    const nextEnabled = !isTtsEnabled;
+    onToggleTts();
+    toast.message(
+      nextEnabled ? TTS_TOGGLE.feedbackOn : TTS_TOGGLE.feedbackOff,
+    );
+  };
+
   return (
     <header className="flex-none flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-white/10">
       <div className="flex items-center gap-2 sm:gap-3">
         <div className="w-8 h-8 rounded-lg bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-          <svg
-            className="w-4 h-4 text-white"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-            />
-          </svg>
+          <AgentLogoIcon className="w-4 h-4 text-white" />
         </div>
         <div>
           <h1 className="text-base font-semibold text-white">
@@ -30,26 +43,38 @@ export const ChatHeader = ({ onClear }: ChatHeaderProps) => {
           </p>
         </div>
       </div>
-      <button
-        onClick={onClear}
-        className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 text-xs text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
-        aria-label="重置会话"
+      <div
+        className="flex items-center gap-1.5 rounded-full border border-white/8 bg-white/2 p-1"
+        role="group"
+        aria-label="会话控制"
       >
-        <svg
-          className="w-3 h-3"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
+        <button
+          type="button"
+          onClick={onClear}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 text-xs text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a] motion-reduce:transition-none"
+          aria-label="重置会话"
+          title="重置会话"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-          />
-        </svg>
-        <span className="hidden sm:inline">重置会话</span>
-      </button>
+          <ClearSessionIcon />
+          <span className="hidden sm:inline">重置会话</span>
+        </button>
+        <button
+          type="button"
+          onClick={handleToggleTts}
+          className={
+            isTtsEnabled
+              ? "flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-blue-500/25 bg-blue-500/12 text-xs text-blue-300 hover:bg-blue-500/18 hover:text-blue-200 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a] motion-reduce:transition-none"
+              : "flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-white/8 bg-white/5 text-xs text-white/35 hover:bg-white/10 hover:text-white/55 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a] motion-reduce:transition-none"
+          }
+          aria-label={isTtsEnabled ? TTS_TOGGLE.ariaOn : TTS_TOGGLE.ariaOff}
+          aria-pressed={isTtsEnabled}
+        >
+          {isTtsEnabled ? <TTS_TOGGLE_ON_ICON /> : <TTS_TOGGLE_OFF_ICON />}
+          <span className="hidden sm:inline">
+            {isTtsEnabled ? TTS_TOGGLE.labelOn : TTS_TOGGLE.labelOff}
+          </span>
+        </button>
+      </div>
     </header>
   );
 };

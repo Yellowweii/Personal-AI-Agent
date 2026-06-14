@@ -36,3 +36,18 @@ export const TTS_RETRY_DELAY_MS = 800;
 
 // 错误提示
 export const TTS_FETCH_ERROR_MESSAGE = "语音合成失败，请稍后重试";
+
+// 用户是否开启 TTS 播报（localStorage 持久化）
+export const TTS_ENABLED_STORAGE_KEY = "tts-enabled";
+export const TTS_ENABLED_DEFAULT = true;
+export const TTS_ENABLED_CHANGE_EVENT = "tts-enabled-change";
+
+export const TTS_TOGGLE = {
+  labelOn: "朗读回复",
+  labelOff: "已静音",
+  ariaOn: "关闭朗读",
+  ariaOff: "开启朗读",
+  feedbackOn: "已开启自动朗读",
+  feedbackOff: "已关闭自动朗读",
+  feedbackDurationMs: 2000,
+} as const;

@@ -1,16 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import "./globals.css";
+import { AppToaster } from "@/views/Agent/components/AppToaster";
+import "./css/globals.css";
+import "sonner/dist/styles.css";
+import "./css/sonnerOverrides.css";
+
+const siteUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://ai.yellowwei.cn";
+const siteDescription =
+  "基于 LLM 的个人 AI Agent：意图识别、任务规划与多模态执行。支持文字、图片、语音输入与流式播报，具备会话记忆与上下文管理。";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_BASE_URL || "https://ai.yellowwei.cn",
-  ),
+  metadataBase: new URL(siteUrl),
   title: {
     default: "Personal AI Agent - 个人智能助理",
     template: "%s | Personal AI Agent",
   },
-  description:
-    "基于 LLM 的个人 AI Agent，理解你的意图并执行任务。支持文字、图片、语音等多模态能力，帮你完成问答、创作与信息处理。",
+  description: siteDescription,
   keywords: [
     "Personal AI Agent",
     "个人智能助理",
@@ -18,10 +22,15 @@ export const metadata: Metadata = {
     "人工智能",
     "LLM",
     "意图识别",
+    "任务规划",
     "多模态",
     "文生文",
     "文生图",
+    "文生视频",
     "语音输入",
+    "语音播报",
+    "图片上传",
+    "会话记忆",
   ],
   authors: [{ name: "Yellowwei" }],
   creator: "Yellowwei",
@@ -36,6 +45,19 @@ export const metadata: Metadata = {
       "max-image-preview": "large",
       "max-snippet": -1,
     },
+  },
+  openGraph: {
+    type: "website",
+    locale: "zh_CN",
+    url: siteUrl,
+    siteName: "Personal AI Agent",
+    title: "Personal AI Agent - 个人智能助理",
+    description: siteDescription,
+  },
+  twitter: {
+    card: "summary",
+    title: "Personal AI Agent - 个人智能助理",
+    description: siteDescription,
   },
   formatDetection: {
     telephone: false,
@@ -61,23 +83,25 @@ export const viewport: Viewport = {
 
 const jsonLd = {
   "@context": "https://schema.org",
-  "@type": "WebSite",
+  "@type": "WebApplication",
   name: "Personal AI Agent",
-  description:
-    "基于 LLM 的个人 AI Agent，理解意图并执行任务，支持多模态能力",
-  url: process.env.NEXT_PUBLIC_BASE_URL || "https://ai.yellowwei.cn",
+  description: siteDescription,
+  url: siteUrl,
   applicationCategory: "ProductivityApplication",
   operatingSystem: "Web Browser",
+  inLanguage: "zh-CN",
   offers: {
     "@type": "Offer",
     price: "0",
     priceCurrency: "CNY",
   },
-  aggregateRating: {
-    "@type": "AggregateRating",
-    ratingValue: "4.8",
-    ratingCount: "1024",
-  },
+  featureList: [
+    "意图识别与任务规划",
+    "文生文 / 文生图 / 文生视频",
+    "语音输入与流式语音播报",
+    "图片上传与视觉理解",
+    "会话记忆与上下文管理",
+  ],
 };
 
 export default function RootLayout({
@@ -90,12 +114,17 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="h-full antialiased">{children}</body>
+      <body className="h-full antialiased">
+        {children}
+        <AppToaster />
+      </body>
     </html>
   );
 }

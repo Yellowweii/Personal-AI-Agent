@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import type { Message } from "@/agent/types/message";
 import type { MessageContentPart } from "@/agent/types/message";
 import type { UseChatReturn } from "@/interfaces/chat";
@@ -8,6 +8,7 @@ import { MemoryManager } from "@/agent/memory/memoryManager";
 import { runAgentPipeline } from "@/agent/planner/planner";
 import { CHAT_ERROR_MESSAGE } from "@/constants/ui";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { useTtsEnabled } from "@/hooks/useTtsEnabled";
 import { buildUserMessageContent } from "@/lib/messageContent";
 
 export const useChat = (): UseChatReturn => {
@@ -16,13 +17,20 @@ export const useChat = (): UseChatReturn => {
   const [isLoading, setIsLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const memoryManagerRef = useRef(new MemoryManager());
+  const { isTtsEnabled, toggleTtsEnabled } = useTtsEnabled();
   const {
     feedText,
     flush,
     reset: resetTTS,
     stop: stopTTS,
     unlock: unlockTTS,
-  } = useTextToSpeech();
+  } = useTextToSpeech({ enabled: isTtsEnabled });
+
+  useEffect(() => {
+    if (!isTtsEnabled) {
+      stopTTS();
+    }
+  }, [isTtsEnabled, stopTTS]);
 
   const handleStop = useCallback(() => {
     abortControllerRef.current?.abort();
@@ -40,7 +48,9 @@ export const useChat = (): UseChatReturn => {
     async (content: string, userImageUrl?: string) => {
       if ((!content.trim() && !userImageUrl) || isLoading) return;
 
-      unlockTTS();
+      if (isTtsEnabled) {
+        unlockTTS();
+      }
       stopTTS();
 
       const userMsg: Message = {
@@ -102,17 +112,19 @@ export const useChat = (): UseChatReturn => {
         setIsLoading(false);
       }
     },
-    [isLoading, messages, feedText, flush, resetTTS, stopTTS, unlockTTS],
+    [isLoading, isTtsEnabled, messages, feedText, flush, resetTTS, stopTTS, unlockTTS],
   );
 
   return {
     messages,
     input,
     isLoading,
+    isTtsEnabled,
     setInput,
     handleSend,
     handleStop,
     stopSpeech: stopTTS,
     clearMessages,
+    toggleTtsEnabled,
   };
 };

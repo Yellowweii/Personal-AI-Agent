@@ -27,3 +27,13 @@ export interface UseTextToSpeechReturn {
   stop: () => void;
   unlock: () => void;
 }
+
+export interface UseTextToSpeechOptions {
+  enabled?: boolean;
+}
+
+export interface UseTtsEnabledReturn {
+  isTtsEnabled: boolean;
+  setTtsEnabled: (enabled: boolean) => void;
+  toggleTtsEnabled: () => void;
+}

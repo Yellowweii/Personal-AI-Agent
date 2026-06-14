@@ -1,0 +1,35 @@
+/* Sonner：TTS 切换提示居中、宽度随内容、中文不竖排 */
+[data-sonner-toast] {
+  overflow-wrap: normal !important;
+  word-break: keep-all !important;
+}
+
+.app-toaster[data-sonner-toaster][data-x-position="center"] {
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  max-width: 100vw !important;
+  transform: none !important;
+}
+
+.app-toaster[data-sonner-toaster][data-x-position="center"] [data-sonner-toast],
+.app-toaster[data-sonner-toaster][data-x-position="center"]
+  [data-sonner-toast][data-x-position="center"] {
+  left: 0 !important;
+  right: 0 !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  width: fit-content !important;
+  max-width: min(calc(100vw - 2rem), 20rem) !important;
+}
+
+.app-toaster[data-sonner-toaster][data-x-position="center"]
+  [data-sonner-toast][data-y-position="top"] {
+  transform: var(--y);
+}
+
+.app-toaster[data-sonner-toaster][data-x-position="center"]
+  [data-sonner-toast][data-swiping="true"] {
+  transform: var(--y) translateY(var(--swipe-amount-y, 0px))
+    translateX(var(--swipe-amount-x, 0px));
+}

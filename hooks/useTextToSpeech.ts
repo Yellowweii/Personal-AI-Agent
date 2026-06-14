@@ -11,7 +11,11 @@ import {
   TTS_SILENT_AUDIO_DATA_URL,
   TTS_UNLOCK_PROBE_VOLUME,
 } from "@/constants/textToSpeech";
-import type { TtsJob, UseTextToSpeechReturn } from "@/interfaces/textToSpeech";
+import type {
+  TtsJob,
+  UseTextToSpeechOptions,
+  UseTextToSpeechReturn,
+} from "@/interfaces/textToSpeech";
 import {
   extractTextSlices,
   fetchTextToSpeechStream,
@@ -42,7 +46,12 @@ const concatBytes = (chunks: Uint8Array[]) => {
  * - flush()   LLM 结束后刷出剩余未切分的尾巴
  * - stop()    立即停止所有 TTS
  */
-export const useTextToSpeech = (): UseTextToSpeechReturn => {
+export const useTextToSpeech = (
+  options?: UseTextToSpeechOptions,
+): UseTextToSpeechReturn => {
+  const enabledRef = useRef(true);
+  enabledRef.current = options?.enabled ?? true;
+
   const abortRef = useRef<AbortController | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const nextStartTimeRef = useRef(0);
@@ -293,6 +302,8 @@ export const useTextToSpeech = (): UseTextToSpeechReturn => {
   /** 把切分好的句子加入队列，并立即发起 TTS 请求（预取） */
   const enqueueSlices = useCallback(
     (slices: string[]) => {
+      if (!enabledRef.current) return;
+
       const signal = abortRef.current?.signal;
       if (!signal || slices.length === 0) return;
 
@@ -316,6 +327,8 @@ export const useTextToSpeech = (): UseTextToSpeechReturn => {
   const reset = useCallback(async () => {
     stop();
 
+    if (!enabledRef.current) return;
+
     const abortController = new AbortController();
     abortRef.current = abortController;
 
@@ -326,7 +339,7 @@ export const useTextToSpeech = (): UseTextToSpeechReturn => {
   /** LLM 流式输出的每个 chunk：累积 → 按句切分 → 完整句入队 TTS */
   const feedText = useCallback(
     (delta: string) => {
-      if (!delta) return;
+      if (!delta || !enabledRef.current) return;
 
       textBufferRef.current += delta;
       const { slices, remainder } = extractTextSlices(textBufferRef.current);
@@ -348,6 +361,8 @@ export const useTextToSpeech = (): UseTextToSpeechReturn => {
 
   /** LLM 结束后，把缓冲区里凑不齐一句的尾巴也送去 TTS */
   const flush = useCallback(() => {
+    if (!enabledRef.current) return;
+
     if (textBufferRef.current.trim()) {
       const tail = textBufferRef.current.trim();
       textBufferRef.current = "";
