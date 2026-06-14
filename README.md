@@ -4,7 +4,7 @@
 
 ## 功能特性
 
-- **意图识别**：解析用户需要哪些输出（文字 / 图片 / 视频，可任意组合）
+- **意图识别**：根据最新消息规划工具步骤列表（`chat` / `image_generate` / `video_generate` 等）
 - **任务规划**：根据意图生成可执行的 `TaskSpec`，再并行调度多模态工具
 - **会话记忆**：滚动摘要历史消息，按阶段选取上下文（意图识别 / 任务规格 / 工具调用）
 - **文生文**：流式输出，支持多轮上下文
@@ -24,21 +24,37 @@
 用户发送消息后，`runAgentPipeline` 依次执行：
 
 1. **同步记忆**：`MemoryManager` 写入新消息、提取资产摘要、按需滚动压缩历史
-2. **意图识别**：`detectIntent` 解析 `TaskOutputs`（`text` / `image` / `video` 布尔组合）
-3. **任务规格**：`generateTaskSpecs` 将意图步骤转为可执行的 `TaskSpec`
-4. **并行执行**：`executeTaskSpec` 调度文生文 / 文生图 / 文生视频等工具，流式合并展示
+2. **意图识别**：`detectIntent` 返回 `PlanResponse.steps`，即本轮需调用的 `ToolCall[]`
+3. **任务规格**：`generateTaskSpecs` 为每个工具生成独立、可执行的 `TaskSpec.prompt`
+4. **并行执行**：`executeTaskSpec` 通过 `Promise.all` 并行调度各工具，流式合并展示
 
-### 意图识别与多模态路由
+### 意图识别与工具路由
 
-| 输出组合 | 行为 |
-|----------|------|
-| 仅 `text` | 流式文字回复 |
-| 仅 `image` | 生成图片 |
-| 仅 `video` | 生成视频（异步轮询） |
-| `text` + `image` | 并行生成文字与图片 |
-| `text` + `video` | 并行生成文字与视频 |
-| `text` + `image` + `video` | 三者并行生成 |
-| `image` + `video` | 并行生成图片与视频 |
+`detectIntent` 以**最新一条用户消息**为规划依据，输出形如 `{"steps": [{"tool": "...", "dependsOn": []}, ...]}` 的工具列表。`dependsOn` 当前预留，一律为空数组。
+
+**可用工具**
+
+| 类别 | 工具 | 说明 |
+|------|------|------|
+| 图片类 | `image_generate` | 文生图 |
+| 图片类 | `image_edit` | 图生图 / 图片编辑（需用户上传图片） |
+| 视频类 | `video_generate` | 文生视频（异步轮询） |
+| 视频类 | `image_to_video` | 图生视频（需用户上传图片） |
+| 文字类 | `chat` | 文生文，流式回复 |
+| 文字类 | `image_understanding` | 图生文 / 图片理解（仅最新消息新上传图片时使用） |
+
+**步骤顺序**：UI 展示顺序固定为「图片类 → 视频类 → 文字类」，与用户在句子里先提到什么无关。
+
+**典型路由**
+
+| 用户意图 | 规划结果 |
+|----------|----------|
+| 纯文字问答 | `[chat]` |
+| 仅上传图片、无文字 | `[image_understanding]`（代码层短路，不走 LLM 规划） |
+| 画一张猫并写 100 字介绍 | `[image_generate, chat]` 并行 |
+| 把这张图改成油画风格 | `[image_edit, image_understanding]` 并行 |
+| 让这张图动起来 | `[image_to_video, image_understanding]` 并行 |
+| 寒暄 / 回顾历史 | `[chat]`，不重复规划已完成的生图 / 生视频 |
 
 ### 流式 TTS 播报
 
