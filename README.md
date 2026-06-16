@@ -55,6 +55,7 @@
 | 根据这张图生成类似图片  | `[image_edit, chat]` 并行                          |
 | 把这张图改成油画风格    | `[image_edit, chat]` 并行                            |
 | 描述一下这张图          | `[image_understanding]`                              |
+| 图 + 寒暄 / 意图不明    | `[chat]`（禁止 `image_understanding`）               |
 | 让这张图动起来          | `[image_to_video, chat]` 并行                        |
 | 寒暄 / 回顾历史         | `[chat]`，不重复规划已完成的生图 / 生视频            |
 
