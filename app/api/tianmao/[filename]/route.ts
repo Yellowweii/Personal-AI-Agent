@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { filename: string } },
+  { params }: { params: Promise<{ filename: string }> },
 ) {
-  if (params.filename === "2264ae042fd6942ef7b10f92e52b1ebd.txt") {
+  const { filename } = await params;
+
+  if (filename === "2264ae042fd6942ef7b10f92e52b1ebd.txt") {
     return new NextResponse(
       "Jfc4Z4Ur15JwUBuvUQD5wg7Nu8+l+HscqYlfofbyJdY4rZ9rR4aoEkVOdVnOVy/A",
       {
