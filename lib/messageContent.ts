@@ -12,6 +12,9 @@ const taskSpecToContentPart = (tool: ToolName): MessageContentPart | null => {
     case "chat":
     case "image_understanding":
       return { type: "text" };
+    case "get_location":
+    case "get_weather":
+      return null;
     case "image_generate":
     case "image_edit":
       return { type: "image" };

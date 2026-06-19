@@ -6,6 +6,7 @@ import {
   type TaskSpec,
   type TaskSpecPlan,
 } from "@/agent/types/plan";
+import { USE_CURRENT_LOCATION_MARKER } from "@/constants/weather";
 
 const DEFAULT_TASK_PROMPT = "请完成该任务。";
 
@@ -20,6 +21,14 @@ const resolveFallbackPrompt = (
 
   if (tool === "image_understanding") {
     return IMAGE_ONLY_DEFAULT_PROMPT;
+  }
+
+  if (tool === "get_location") {
+    return "获取用户当前 IP 定位";
+  }
+
+  if (tool === "get_weather") {
+    return USE_CURRENT_LOCATION_MARKER;
   }
 
   return DEFAULT_TASK_PROMPT;

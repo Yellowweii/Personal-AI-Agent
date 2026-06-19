@@ -5,7 +5,7 @@ import type { Message } from "@/agent/types/message";
 import type { MessageContentPart } from "@/agent/types/message";
 import type { UseChatReturn } from "@/interfaces/chat";
 import { MemoryManager } from "@/agent/memory/memoryManager";
-import { runAgentPipeline } from "@/agent/planner/planner";
+import { runAgentPipeline } from "@/agent/workflow/runAgentPipeline";
 import { CHAT_ERROR_MESSAGE } from "@/constants/ui";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { useTtsEnabled } from "@/hooks/useTtsEnabled";
@@ -112,7 +112,16 @@ export const useChat = (): UseChatReturn => {
         setIsLoading(false);
       }
     },
-    [isLoading, isTtsEnabled, messages, feedText, flush, resetTTS, stopTTS, unlockTTS],
+    [
+      isLoading,
+      isTtsEnabled,
+      messages,
+      feedText,
+      flush,
+      resetTTS,
+      stopTTS,
+      unlockTTS,
+    ],
   );
 
   return {

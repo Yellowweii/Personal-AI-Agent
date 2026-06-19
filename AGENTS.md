@@ -15,8 +15,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 按功能模块拆分文件，便于查找和维护。新增或重构代码时遵循以下约定：
 
 - **agent/types/**：Agent 领域模型（如 `message.ts`、`plan.ts`、`memory.ts`）。跨层复用的核心数据结构放这里。
-- **agent/planner/**：意图识别（`detectIntent`）与任务规格生成（`generateTaskSpecs`）、流水线编排（`planner.ts`）。
-- **agent/executor/**：按 `TaskSpec` 调度多模态工具执行任务。
+- **agent/workflow/**：工作流编排（`runAgentPipeline`），串联 planner → executor → responder。
+- **agent/planner/**：意图识别（`detectIntent`）、任务规格生成（`generateTaskSpecs`）、规划阶段编排（`runPlanner`）。
+- **agent/executor/**：按 `TaskSpec` 调度多模态工具执行任务（`executeTaskSpec`、`runExecutor`）。
+- **agent/responder/**：结构化工具结果总结与自然语言回复（`runResponder`、`summarizeToolResults`）。
 - **agent/tools/**：多模态能力的前端调用封装（文生文、文生图、文生视频、STT、TTS、图生文等）。
 - **agent/memory/**：Memory 与 Context（如 `memoryManager.ts`、`buildContextPool.ts`、`selectIntentContext.ts`）。`store` / `summary` / `contextBuilder` / `contextSelection` 子目录按能力拆分。
 - **interfaces/**：对外边界类型，按功能模块一文件（如 `chat.ts`、`textToSpeech.ts`、`generateTaskSpecs.ts`）。仅放 API 请求/响应、Hook 返回类型等契约，不放 Agent 领域模型。不要在组件、hooks 或 API 路由内内联定义可复用类型。

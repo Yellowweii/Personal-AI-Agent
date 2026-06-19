@@ -4,7 +4,9 @@ export type ToolName =
   | "image_generate"
   | "image_edit"
   | "video_generate"
-  | "image_to_video";
+  | "image_to_video"
+  | "get_location"
+  | "get_weather";
 
 export interface ToolCall {
   tool: ToolName;
@@ -32,7 +34,14 @@ export const VALID_TOOL_NAMES: ToolName[] = [
   "image_edit",
   "video_generate",
   "image_to_video",
+  "get_location",
+  "get_weather",
 ];
+
+export const taskSpecsHasTextStream = (taskSpecs: TaskSpec[]): boolean =>
+  taskSpecs.some(
+    (spec) => spec.tool === "chat" || spec.tool === "image_understanding",
+  );
 
 export const IMAGE_ONLY_DEFAULT_PROMPT = "请描述这张图片的内容。";
 

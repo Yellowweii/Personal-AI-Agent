@@ -23,14 +23,14 @@
 
 用户发送消息后，`runAgentPipeline` 依次执行：
 
-1. **同步记忆**：`MemoryManager` 写入新消息、提取资产摘要、按需滚动压缩历史
-2. **意图识别**：`detectIntent` 返回 `PlanResponse.steps`，即本轮需调用的 `ToolCall[]`
-3. **任务规格**：`generateTaskSpecs` 为每个工具生成独立、可执行的 `TaskSpec.prompt`
-4. **并行执行**：`executeTaskSpec` 通过 `Promise.all` 并行调度各工具，流式合并展示
+1. **同步记忆**（Memory）：`MemoryManager` 写入新消息、提取资产摘要、按需滚动压缩历史
+2. **任务规划**（Planner）：`detectIntent` → `generateTaskSpecs`，输出 `TaskSpec[]`
+3. **工具执行**（Executor）：按 `dependsOn` 分批并行调度 Tools，收集 `toolResults`
+4. **结果回复**（Responder）：对结构化工具结果（如天气）调用 `summarizeToolResults` 生成自然语言；`chat` / `image_understanding` 等在 Executor 阶段直接流式输出
 
 ### 意图识别与工具路由
 
-`detectIntent` 以**最新一条用户消息**为规划依据，输出形如 `{"steps": [{"tool": "...", "dependsOn": []}, ...]}` 的工具列表。`dependsOn` 当前预留，一律为空数组。
+`detectIntent` 以**最新一条用户消息**为规划依据，输出形如 `{"steps": [{"tool": "...", "dependsOn": []}, ...]}` 的工具列表。`dependsOn` 表示工具间前置依赖。
 
 **可用工具**
 
@@ -40,6 +40,8 @@
 | 图片类 | `image_edit`          | 图生图 / 图片编辑（需用户上传图片，含生成类似图） |
 | 视频类 | `video_generate`      | 文生视频（异步轮询）                            |
 | 视频类 | `image_to_video`      | 图生视频（需用户上传图片）                      |
+| 工具类 | `get_location`        | IP 定位（天气查询未指定地点时）                 |
+| 工具类 | `get_weather`         | 天气查询（结果由 `summarizeToolResults` 总结）  |
 | 文字类 | `chat`                | 文生文，流式回复                                |
 | 文字类 | `image_understanding` | 图生文 / 图片理解（用户明确要求识图、描述图片时使用） |
 
@@ -51,12 +53,16 @@
 | ----------------------- | ---------------------------------------------------- |
 | 纯文字问答              | `[chat]`                                             |
 | 仅上传图片、无文字      | `[image_understanding]`（代码层短路，不走 LLM 规划） |
+| 画一张猫                | `[image_generate]`                                   |
 | 画一张猫并写 100 字介绍 | `[image_generate, chat]` 并行                        |
-| 根据这张图生成类似图片  | `[image_edit, chat]` 并行                          |
-| 把这张图改成油画风格    | `[image_edit, chat]` 并行                            |
+| 根据这张图生成类似图片  | `[image_edit]`                                       |
+| 把这张图改成油画风格    | `[image_edit]`                                       |
 | 描述一下这张图          | `[image_understanding]`                              |
 | 图 + 寒暄 / 意图不明    | `[chat]`（禁止 `image_understanding`）               |
-| 让这张图动起来          | `[image_to_video, chat]` 并行                        |
+| 让这张图动起来          | `[image_to_video]`                                   |
+| 今天天气怎么样          | `[get_location, get_weather]` → `summarizeToolResults` |
+| 北京今天会下雨吗        | `[get_weather]` → `summarizeToolResults`             |
+| 我的地理位置 / 我在哪   | `[get_location]` → `summarizeToolResults`            |
 | 寒暄 / 回顾历史         | `[chat]`，不重复规划已完成的生图 / 生视频            |
 
 ### 流式 TTS 播报
@@ -87,8 +93,10 @@
 
 ```
 agent/                        # Agent 核心
-├── planner/                  # 意图识别 · 任务规格 · 流水线
-├── executor/                 # TaskSpec 执行调度
+├── workflow/                 # 工作流编排（runAgentPipeline）
+├── planner/                  # 意图识别 · 任务规格 · runPlanner
+├── executor/                 # TaskSpec 执行调度 · runExecutor
+├── responder/                # 结构化结果总结 · runResponder
 ├── tools/                    # 多模态工具前端封装
 ├── memory/                   # 记忆与上下文（store · summary · contextBuilder · contextSelection）
 └── types/                    # 领域模型
@@ -96,6 +104,9 @@ app/
 ├── api/                      # 后端 API 路由
 │   ├── detectIntent/         # 意图识别
 │   ├── generateTaskSpecs/    # 任务规格生成
+│   ├── summarizeToolResults/ # 结构化工具结果总结（流式）
+│   ├── getLocation/          # IP 定位
+│   ├── getWeather/           # 天气查询
 │   ├── text2Text/            # 文生文（流式）
 │   ├── text2Image/           # 文生图
 │   ├── text2Video/           # 文生视频
